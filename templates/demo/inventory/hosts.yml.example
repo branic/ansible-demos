@@ -1,0 +1,6 @@
+---
+# Replace with the hosts and groups required by the demo.
+all:
+  hosts:
+    localhost:
+      ansible_connection: local

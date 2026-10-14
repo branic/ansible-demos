@@ -1,0 +1,15 @@
+---
+profile: production
+strict: true
+
+# Keep every demo and the starter template in scope.
+exclude_paths:
+  - .git/
+  - .venv/
+  - .ansible/
+  - .cache/
+
+# Example inputs are YAML even though their filenames end in .example.
+kinds:
+  - inventory: "**/inventory/*.yml.example"
+  - vars: "**/vars/*.yml.example"

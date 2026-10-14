@@ -1,0 +1,8 @@
+---
+- name: Demo starter - replace with demonstration tasks
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Display starter message
+      ansible.builtin.debug:
+        msg: "{{ demo_message | default('Demo starter') }}"

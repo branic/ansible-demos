@@ -1,0 +1,10 @@
+---
+version: 3
+images:
+  base_image:
+    # Replace with an accessible, tested execution environment base image.
+    name: registry.example.com/replace-me/base-ee:replace-me
+dependencies:
+  galaxy: ../collections/requirements.yml
+  python: requirements.txt
+  system: bindep.txt

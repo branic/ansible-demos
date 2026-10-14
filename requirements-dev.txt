@@ -1,0 +1,2 @@
+# Keep local validation and CI on the same linter release.
+ansible-lint==26.6.0

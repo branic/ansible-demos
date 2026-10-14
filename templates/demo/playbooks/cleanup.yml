@@ -1,0 +1,8 @@
+---
+- name: Cleanup starter - replace if the demo creates resources
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Explain starter cleanup behavior
+      ansible.builtin.debug:
+        msg: The starter creates no resources and requires no cleanup.

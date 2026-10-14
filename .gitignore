@@ -1,0 +1,18 @@
+# Local Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.ansible/
+.cache/
+*.retry
+
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+.aws/
+**/inventory/hosts.yml
+**/vars/demo.yml
+
+# Generated execution environment build context
+**/execution-environment/context/
