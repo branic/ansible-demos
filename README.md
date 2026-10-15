@@ -17,6 +17,7 @@ Each demo declares one of these execution modes:
 | Demo | Description | Execution mode |
 | --- | --- | --- |
 | [Workflow host failure](demos/workflow-host-failure/README.md) | Rescue task failures and skip those hosts in later AAP jobs. | AAP (controller validation pending); CLI verification included |
+| [Azure Key Vault credentials](demos/azure-key-vault/README.md) | Retrieve a username and password through an external credential source and inject them into an AAP job. | AAP (controller and Azure validation pending); local playbook checks included |
 
 ## Getting started
 

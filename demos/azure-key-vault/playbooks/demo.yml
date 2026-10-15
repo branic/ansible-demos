@@ -1,0 +1,27 @@
+---
+- name: Use credentials retrieved from Azure Key Vault
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Validate that both injected values contain data
+      ansible.builtin.assert:
+        that:
+          - azure_key_vault_demo_username is defined
+          - azure_key_vault_demo_password is defined
+          - azure_key_vault_demo_username is string
+          - azure_key_vault_demo_password is string
+          - azure_key_vault_demo_username | trim | length > 0
+          - azure_key_vault_demo_password | trim | length > 0
+        quiet: true
+      no_log: true
+
+    - name: Confirm both values passed validation
+      ansible.builtin.debug:
+        msg: Azure Key Vault demo username and password both contain data.
+
+    - name: Display the retrieved values for the demo
+      ansible.builtin.debug:
+        msg:
+          username: "{{ azure_key_vault_demo_username }}"
+          password: "{{ azure_key_vault_demo_password }}"
