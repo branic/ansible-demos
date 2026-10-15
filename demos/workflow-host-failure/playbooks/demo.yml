@@ -28,6 +28,9 @@
             msg: "STAGE 1 succeeded on {{ inventory_hostname }}"
 
       rescue:
+        - name: Clear host errors to ensure Job status is 'Successful'
+          ansible.builtin.meta: clear_host_errors
+
         - name: Record this host for subsequent workflow jobs
           ansible.builtin.set_stats:
             data:
