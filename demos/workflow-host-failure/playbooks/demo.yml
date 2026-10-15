@@ -1,0 +1,44 @@
+---
+- name: Run the initial action with failure handling
+  hosts: workflow_demo
+  gather_facts: false
+  tasks:
+    - name: Initialize the failed host list
+      ansible.builtin.set_stats:
+        data:
+          __workflow_host_failure_failed_hosts: []
+        per_host: false
+        aggregate: false
+      run_once: true
+
+    - name: Perform the initial action
+      block:
+        - name: Check connectivity
+          ansible.builtin.ping:
+
+        - name: Simulate a task failure on selected hosts
+          ansible.builtin.fail:
+            msg: "Intentional demo failure on {{ inventory_hostname }}"
+          when: >-
+            inventory_hostname in
+            (workflow_host_failure_initial_fail_hosts | default(['demo2']))
+
+        - name: Show the initial action succeeded
+          ansible.builtin.debug:
+            msg: "STAGE 1 succeeded on {{ inventory_hostname }}"
+
+      rescue:
+        - name: Record this host for subsequent workflow jobs
+          ansible.builtin.set_stats:
+            data:
+              __workflow_host_failure_failed_hosts:
+                - "{{ inventory_hostname }}"
+            per_host: false
+            aggregate: true
+
+        - name: Stop processing this host
+          ansible.builtin.meta: end_host
+
+    - name: Continue the current playbook on healthy hosts
+      ansible.builtin.debug:
+        msg: "STAGE 1 continued on {{ inventory_hostname }}"

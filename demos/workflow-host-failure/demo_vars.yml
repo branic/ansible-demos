@@ -1,0 +1,4 @@
+---
+workflow_host_failure_initial_fail_hosts:
+  - demo2
+workflow_host_failure_configure_fail_hosts: []

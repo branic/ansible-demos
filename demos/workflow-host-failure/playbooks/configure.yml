@@ -1,0 +1,47 @@
+---
+- name: Configure hosts that have not failed
+  hosts: workflow_demo
+  gather_facts: false
+  tasks:
+    - name: Carry forward failures from previous workflow jobs
+      ansible.builtin.set_stats:
+        data:
+          __workflow_host_failure_failed_hosts: >-
+            {{ __workflow_host_failure_failed_hosts | default([]) }}
+        per_host: false
+        aggregate: false
+      run_once: true
+
+    - name: Skip hosts that failed earlier in the workflow
+      ansible.builtin.meta: end_host
+      when: >-
+        inventory_hostname in
+        (__workflow_host_failure_failed_hosts | default([]))
+
+    - name: Perform the configuration action
+      block:
+        - name: Check connectivity
+          ansible.builtin.ping:
+
+        - name: Optionally simulate another task failure
+          ansible.builtin.fail:
+            msg: "Intentional configure failure on {{ inventory_hostname }}"
+          when: >-
+            inventory_hostname in
+            (workflow_host_failure_configure_fail_hosts | default([]))
+
+        - name: Demonstrate the configuration action
+          ansible.builtin.debug:
+            msg: "STAGE 2 configured {{ inventory_hostname }}"
+
+      rescue:
+        - name: Add this host to the workflow failed host list
+          ansible.builtin.set_stats:
+            data:
+              __workflow_host_failure_failed_hosts:
+                - "{{ inventory_hostname }}"
+            per_host: false
+            aggregate: true
+
+        - name: Stop processing this host
+          ansible.builtin.meta: end_host
