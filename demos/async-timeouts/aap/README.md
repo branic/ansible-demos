@@ -175,6 +175,10 @@ endpoint no longer makes the teaching job fail. The AAP evidence above records
 the earlier version with assertions in the playbook. The simplified version has
 not yet been revalidated in AAP.
 
+Both native async lessons now leave retained job caches to ephemeral EE teardown.
+The separate-poll lesson also shows the launch directly in the playbook. These
+changes have passed CLI checks; AAP has not yet been revalidated.
+
 ## Troubleshooting and cleanup
 
 - **Artifact missing or wrong:** check source synchronization, policy values,

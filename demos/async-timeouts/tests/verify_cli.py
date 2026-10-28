@@ -366,23 +366,25 @@ def check_examples(base: Path) -> None:
         )
         if mode == "separate":
             check_continuation(
-                job, "Demonstrate work between launch and collection", HOSTS
+                job, "Show that execution continues before the operation finishes", HOSTS
             )
-        else:
-            # The positive-poll lesson leaves timeout caches to EE teardown.
-            # Drain them here so CLI verification cleans its own resources.
-            for cache in (job.work / "async").iterdir():
+        # Both lessons leave retained caches to EE teardown. Drain them here
+        # using the launching host's context so CLI verification cleans up.
+        launch_task = (
+            "Launch and wait at the same task"
+            if mode == "positive"
+            else "Launch the delayed operation"
+        )
+        for event in job.events(launch_task):
+            result = event["result"]
+            launch = result.get("async_result", result)
+            if launch.get("results_file") and Path(launch["results_file"]).exists():
                 run_job(
                     base,
-                    f"drain-positive-{cache.name}",
+                    f"drain-{mode}-{event['host']}",
                     "tests/playbooks/clean-test-job.yml",
-                    {
-                        "async_timeouts_cleanup_job": {
-                            "ansible_job_id": cache.name,
-                            "results_file": str(cache),
-                        }
-                    },
-                    flags=("--limit", "demo2"),
+                    {"async_timeouts_cleanup_job": launch},
+                    flags=("--limit", event["host"]),
                     reuse=job,
                 )
         check_cleanup(job)

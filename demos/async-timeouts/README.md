@@ -211,12 +211,13 @@ a particular Ansible version formats debug output.
 ## Cleanup and limitations
 
 Positive polling normally removes completed job caches automatically, but it can
-stop waiting before the async wrapper publishes its timeout. The positive-poll
-lesson leaves any retained timeout cache to ephemeral EE teardown. For CLI runs,
+stop waiting before the async wrapper publishes its timeout. Separate polling
+with `poll: 0` retains job caches even after explicit status collection. Both
+native async lessons leave retained caches to ephemeral EE teardown. For CLI runs,
 inspect the job result after it finishes and remove a retained cache with
 `ansible.builtin.async_status`, using its `jid` and `mode: cleanup` in the same
 connection context and async directory. The CLI harness drains retained jobs and
-removes their caches outside the teaching playbook.
+removes their caches outside the teaching playbooks.
 
 The standalone HTTP service remains available across jobs; remove it separately
 with `oc delete -k demos/async-timeouts/service` when finished. The CLI harness
