@@ -1,10 +1,13 @@
 """Run real Ansible processes and verify outcomes, artifacts, and cleanup."""
 
+import argparse
+from contextlib import contextmanager
 from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -338,7 +341,7 @@ def check_role_edges(base: Path) -> None:
 
 
 def check_examples(base: Path) -> None:
-    """Run the native examples and verify the self-contained HTTP lifecycle."""
+    """Run the native async examples and the URI example."""
     for mode in ("positive", "separate"):
         job = run_job(
             base,
@@ -367,26 +370,97 @@ def check_examples(base: Path) -> None:
             )
         check_cleanup(job)
 
-    for iteration in range(2):
-        job = run_job(base, f"uri-{iteration}", "playbooks/demonstrate-uri-timeout.yml")
-        require(
-            job.capture["hosts"]["demo1"]["rescued"] == 1,
-            "Expected URI timeout not rescued",
+    check_uri_example(base)
+
+
+@contextmanager
+def http_fixture(base: Path):
+    """Keep the HTTP server lifecycle in the test harness, outside the lesson."""
+    with tempfile.TemporaryDirectory(prefix="http-fixture-", dir=base) as directory:
+        state_directory = Path(directory)
+        with (state_directory / "server.log").open("w", encoding="utf-8") as log:
+            server = subprocess.Popen(
+                [
+                    sys.executable,
+                    str(DEMO / "service" / "slow_http_server.py"),
+                    "--port",
+                    "0",
+                    "--state-directory",
+                    directory,
+                ],
+                stdout=log,
+                stderr=log,
+            )
+            try:
+                endpoint = state_directory / "endpoint.json"
+                deadline = time.monotonic() + 10
+                while not endpoint.exists() and time.monotonic() < deadline:
+                    require(server.poll() is None, "HTTP fixture exited during startup")
+                    time.sleep(0.1)
+                require(endpoint.exists(), "HTTP fixture did not become ready")
+                yield json.loads(endpoint.read_text(encoding="utf-8"))["url"]
+            finally:
+                server.terminate()
+                try:
+                    server.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    server.kill()
+                    server.wait(timeout=5)
+                    raise AssertionError(
+                        "HTTP fixture did not shut down gracefully"
+                    ) from None
+                require(
+                    server.returncode == 0, "HTTP fixture failed during its lifecycle"
+                )
+                require(not process_running(server.pid), "HTTP fixture still running")
+
+
+def check_uri_example(base: Path) -> None:
+    """Verify the teaching playbook uses an existing endpoint without managing it."""
+    with http_fixture(base) as endpoint:
+        for iteration in range(2):
+            job = run_job(
+                base,
+                f"uri-{iteration}",
+                "playbooks/demonstrate-uri-timeout.yml",
+                {"async_timeouts_http_url": endpoint + "/slow"},
+            )
+            require(
+                job.capture["hosts"]["demo1"]["rescued"] == 1,
+                "Expected URI timeout not rescued",
+            )
+            require(
+                job.events("Confirm the expected socket timeout was the failure")
+                and job.events("Verify the successful response"),
+                "URI outcomes not verified",
+            )
+            require(
+                not any(
+                    event["action"]
+                    in {
+                        "ansible.builtin.command",
+                        "ansible.builtin.async_status",
+                        "ansible.builtin.tempfile",
+                        "ansible.builtin.file",
+                    }
+                    for event in job.capture["events"]
+                ),
+                "Teaching playbook still manages infrastructure",
+            )
+            check_cleanup(job)
+        wrong_endpoint = run_job(
+            base,
+            "uri-wrong-endpoint",
+            "playbooks/demonstrate-uri-timeout.yml",
+            {"async_timeouts_http_url": endpoint + "/healthz"},
+            expected_rc=2,
         )
         require(
-            job.events("Confirm the expected socket timeout was the failure")
-            and job.events("Verify the successful response"),
-            "URI outcomes not verified",
+            wrong_endpoint.capture["hosts"]["demo1"]["failures"] == 1,
+            "A fast endpoint was incorrectly accepted as a timeout demonstration",
         )
-        state = job.events("Remember the fixture endpoint")[0]["result"][
-            "ansible_facts"
-        ]["__async_timeouts_http_state"]
-        require(not process_running(state["pid"]), "HTTP fixture still running")
-        fixture_path = job.events("Create a private directory for the HTTP fixture")[0][
-            "result"
-        ]["path"]
-        require(not Path(fixture_path).exists(), "HTTP fixture directory remains")
-        check_cleanup(job)
+        check_cleanup(wrong_endpoint)
+    require(not list(base.glob("http-fixture-*")), "HTTP fixture directory remains")
 
 
 def check_static_and_check_mode(base: Path) -> None:
@@ -441,18 +515,28 @@ def check_static_and_check_mode(base: Path) -> None:
 
 def main() -> None:
     """Run the acceptance matrix using the active ansible-playbook executable."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--uri-only",
+        action="store_true",
+        help="Check syntax, check mode, and URI behavior only",
+    )
+    args = parser.parse_args()
     with tempfile.TemporaryDirectory(
         prefix="async-timeouts-verification-"
     ) as directory:
         base = Path(directory)
         try:
             check_static_and_check_mode(base)
-            check_mixed(base, "fail_host", "mixed-fail-host")
-            check_mixed(base, "collect_and_exclude", "mixed-collect")
-            check_mixed(base, "collect_and_exclude", "mixed-collect-repeat")
-            check_controls(base)
-            check_role_edges(base)
-            check_examples(base)
+            if args.uri_only:
+                check_uri_example(base)
+            else:
+                check_mixed(base, "fail_host", "mixed-fail-host")
+                check_mixed(base, "collect_and_exclude", "mixed-collect")
+                check_mixed(base, "collect_and_exclude", "mixed-collect-repeat")
+                check_controls(base)
+                check_role_edges(base)
+                check_examples(base)
         except Exception:
             # Preserve logs after a failing assertion, without leaving live work.
             import shutil
@@ -473,7 +557,8 @@ def main() -> None:
                 and time.monotonic() < deadline
             ):
                 time.sleep(0.2)
-    print("All CLI checks passed. AAP routing still requires controller validation.")
+    scope = "URI, syntax, and check-mode checks" if args.uri_only else "All CLI checks"
+    print(f"{scope} passed. These CLI checks do not validate AAP routing.")
 
 
 if __name__ == "__main__":

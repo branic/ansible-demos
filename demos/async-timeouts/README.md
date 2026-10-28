@@ -23,11 +23,13 @@ the exact tested revision and execution environment.
 | Execution environment | Supported RHEL 9 EE; ansible-core 2.16.19, Python 3.12.15, RHEL 9.8; pinned image digest in the AAP validation record |
 | Collections | Only `ansible.builtin`; no Galaxy installation required |
 | Targets | Three local inventory aliases; no external machines or machine credentials |
+| URI endpoint | Standalone container on OpenShift; see [service setup](service/README.md) |
 
 The mixed role scenario took approximately **17 seconds** per CLI run and
 **20 seconds** per AAP job. The complete AAP collection-and-verification workflow
-took approximately **24 seconds**. The URI example took 7–8 seconds locally and
-9.7 seconds in AAP. Controller job elapsed time excludes queue time but includes
+took approximately **24 seconds**. URI timing for the standalone service is
+recorded in the latest AAP validation entry. Controller job elapsed time excludes
+queue time but includes
 some runner setup; these are lab observations, not fleet-scale timing guarantees.
 
 All aliases run inside the same CLI environment or AAP EE container. They
@@ -45,11 +47,11 @@ separate SSH hosts requires adapting script delivery and interpreter selection.
 | `demonstrate-role.yml` | Reuse collection and error processing | Depends on the selected policy |
 | `verify-survivors.yml` | Brief proof of downstream exclusion | Exit 0; inherited artifact determines participating hosts |
 
-The URI example starts a Python server on an ephemeral loopback port, requests a
-three-second response with `timeout: 1`, rescues and checks that timeout, then
-succeeds with `timeout: 6`. It disables HTTP proxies for these local requests and
-shuts down the server in `always`. No internet service or installed web server is
-needed. The fixture has a 90-second async safety limit if a job is interrupted.
+The URI example calls a [standalone HTTP service](service/README.md) prepared
+before the lesson. It requests a three-second response with `timeout: 1`, rescues
+and checks that timeout, then succeeds with `timeout: 6`. The teaching playbook
+contains no server setup, async launch, or teardown. The service is one Python
+container on OpenShift; no VM or separately managed machine is required.
 
 `uri.timeout` is a **socket-level timeout**, not a universal overall task deadline.
 `async` bounds an asynchronous task's execution, with enforcement granularity and
@@ -78,6 +80,7 @@ scenario values. Its defaults run the standalone
 | `async_timeouts_poll_interval` | `1` | Positive poll interval or explicit status retry delay |
 | `async_timeouts_poll_retries` | `40` | Explicit status retry count |
 | `async_timeouts_failure_policy` | `fail_host` | `fail_host` or `collect_and_exclude` for the role example |
+| `async_timeouts_http_url` | ClusterIP URL documented in [service setup](service/README.md#endpoints) | Complete URI lesson URL, including `/slow`; use the Route URL for CLI access |
 
 All inputs are non-secret. Put persistent scenario changes in inventory; use
 extra variables for the deliberate policy comparison and temporary controls.
@@ -93,13 +96,17 @@ process markers; normal runs create no PID marker files.
 
 ## Run with the CLI
 
-Run from the repository root with Ansible installed. No provisioning, privilege
-escalation, credentials, or external collections are needed. The URI example
-needs permission to bind a local loopback socket.
+Run from the repository root with Ansible installed. The async examples need no
+provisioning, privilege escalation, credentials, or external collections. For
+the URI lesson, [deploy the HTTP service](service/README.md#deploy) first using
+`oc`, then obtain its Route hostname. Only service setup/removal requires cluster
+credentials; the teaching playbooks need no machine or OpenShift credentials.
 
 ```bash
+async_timeouts_route=$(oc -n async-timeouts-demo get route async-timeouts-http -o jsonpath='{.spec.host}')
 ansible-playbook -i demos/async-timeouts/inventory \
-  demos/async-timeouts/playbooks/demonstrate-uri-timeout.yml
+  demos/async-timeouts/playbooks/demonstrate-uri-timeout.yml \
+  -e "async_timeouts_http_url=http://${async_timeouts_route}/slow"
 
 ansible-playbook -i demos/async-timeouts/inventory \
   demos/async-timeouts/playbooks/demonstrate-positive-poll.yml
@@ -169,10 +176,12 @@ The harness syntax-checks every entrypoint, exercises check mode, tests both
 policies with mixed/all-success/all-unsuccessful outcomes, repeats the mixed
 collection scenario, and passes actual artifacts to downstream processes. It
 also checks invalid role inputs, missing status, polling exhaustion, the native
-examples, two HTTP runs, process termination, and terminal cache cleanup. It
+examples, repeated HTTP runs, wrong-endpoint rejection, process termination, and terminal cache cleanup. It
 uses Linux `/proc` to verify that standalone command and server processes exit.
 Allow several minutes. On failure, it prints a temporary directory containing
-logs and structured evidence. It does not require access to AAP.
+logs and structured evidence. It does not require access to AAP or OpenShift:
+the harness starts the HTTP test server in Python, outside the teaching playbook.
+Use `--uri-only` for the changed URI example plus syntax/check-mode checks.
 
 The content follows [Good Practices for Ansible](https://redhat-cop.github.io/automation-good-practices/):
 descriptive names, prefixed inputs and internal state, role defaults and argument
@@ -180,8 +189,9 @@ validation, task-only orchestration, structured inventory, appropriate debug
 verbosity, explicit change reporting, and documented execution limitations.
 The command is a deliberate demonstration operation with no persistent business
 changes, so it reports unchanged; temporary fixture and cache mutations report
-changed. Repeated runs should have identical outcome sets and leave no fixture
-resources behind. Collecting an already-cleaned job ID fails by design.
+changed. Repeated runs should have identical outcome sets. The CLI harness
+removes its temporary fixture resources; presentation jobs leave the separately
+managed HTTP service running. Collecting an already-cleaned job ID fails by design.
 
 The strict production lint check applies without skips or suppressions. Review
 these design properties separately; a lint pass alone cannot establish them.
@@ -195,8 +205,10 @@ a particular Ansible version formats debug output.
 
 ## Cleanup and limitations
 
-Normal runs automatically remove terminal job caches and HTTP fixture files and
-stop the HTTP server. Positive polling can finish waiting before the async
+Normal async runs automatically remove terminal job caches. The standalone HTTP
+service remains available across jobs; remove it separately with
+`oc delete -k demos/async-timeouts/service` when finished. The CLI harness cleans
+up its own temporary HTTP process and files. Positive polling can finish waiting before the async
 wrapper publishes its timeout; its `always` cleanup waits for that terminal
 result. Cleanup polling deliberately accepts the command's failure result so
 the original teaching failure remains the reported failure.
@@ -207,11 +219,13 @@ can continue until its async limit. To clean one after it finishes, call
 same connection context and async directory. Never delete an active job's cache
 as a way of cancelling it. The harness explicitly drains its exhaustion tests.
 
-Cancelling an AAP job or killing a CLI process can bypass cleanup. The fixture
-and commands are bounded by their async limits; inspect retained job results
+Cancelling an AAP job or killing a CLI process can bypass async cleanup. Commands
+are bounded by their async limits; inspect retained job results
 before removing leftovers. Temporary files may remain after interruption.
 
-There is no persistent target configuration or infrastructure cost. In AAP,
+The HTTP service uses a small share of the existing OpenShift cluster's capacity;
+no VM or persistent storage is provisioned. Remove its dedicated demo project
+after presenting. In AAP,
 remove the demo workflow, six job templates, and dedicated inventory/source when
 finished. Remove a project or EE registration only if dedicated to this demo.
 

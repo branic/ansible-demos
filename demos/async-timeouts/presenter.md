@@ -12,6 +12,9 @@ full rehearsal against the presentation.
   changing code, platform, or EE. Run the CLI harness and strict lint.
 - Keep inventory defaults and fixed template policies. Confirm type Run, blank
   limits/tags, one slice, and no surveys or privilege escalation.
+- [Deploy the HTTP container](service/README.md#deploy) before the meeting and
+  check `/healthz`. AAP uses its ClusterIP URL; CLI requests use the Route URL.
+  Keep service setup and cleanup outside the teaching sequence.
 - Open each playbook and the role's collection task file in an editor with
   readable YAML. Open the named templates and workflow in AAP.
 - Keep a completed validated run available for reference if AAP startup is slow.
@@ -21,7 +24,7 @@ full rehearsal against the presentation.
 
 | Time | Action | Explain or show |
 | --- | --- | --- |
-| 0:00–2:00 | Run `demo_demonstrate_uri_timeout` | The module's socket timeout; expected rescue; successful longer timeout; fixture cleanup |
+| 0:00–2:00 | Run `demo_demonstrate_uri_timeout` | Two requests to the prepared HTTP service: socket timeout, expected rescue, then success with a longer timeout |
 | 2:00–4:00 | Run `demo_demonstrate_positive_poll` | `async` sets execution allowance; positive `poll` collects at the launch task; only demo1 continues |
 | 4:00–6:00 | Run `demo_demonstrate_separate_poll` | All hosts reach `BEFORE COLLECTION`; the registered job ID connects launch to explicit polling |
 | 6:00–8:00 | Show `demonstrate-role.yml` and `async_result/tasks/collect.yml` | The repeated polling and error processing now live behind one small role interface |

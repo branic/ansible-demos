@@ -21,8 +21,11 @@ platform, or EE.
 4. Verify group `async_timeouts_demo` contains demo1, demo2, and demo3; inspect
    their imported delay and exit-code values. Check group settings include
    `ansible_connection: local` and the playbook Python interpreter expression.
-5. Ensure execution nodes permit the EE's temporary loopback HTTP listener.
-   There are no inbound external connections or published container ports.
+5. [Deploy the standalone HTTP service](../service/README.md#deploy) once before
+   running the URI lesson. Its container runs in the `async-timeouts-demo`
+   OpenShift project. Confirm AAP execution pods can resolve and reach its
+   ClusterIP Service URL from the imported `async_timeouts_http_url` variable.
+   An AAP instance outside that cluster can use the Route URL instead.
 
 Names use the `demo_` lab namespace; substitute your organization prefix when
 adapting them. Reuse existing organization, project, and EE objects where useful.
@@ -63,7 +66,9 @@ child template. Use the same inventory and project revision for both nodes.
 ## Acceptance procedure
 
 1. Run the URI template. Verify the one-second socket timeout is rescued, the
-   six-second request succeeds, cleanup runs, and the job is Successful.
+   six-second request succeeds, and the job is Successful. Repeat the job and
+   confirm the separate service stays available; the job must not provision or
+   tear down the HTTP container.
 2. Run each native async template. Verify demo2 times out and demo3 exits 7, the
    job is Failed, and only demo1 reaches the continuation message. In the
    separate polling example, all hosts first reach `BEFORE COLLECTION`.
@@ -138,8 +143,10 @@ an initial temporary archive-source pod, Service, and ConfigMap were removed.
   cause unhandled failures.
 - **Python or script missing:** confirm the repository revision and EE image.
   These scripts intentionally run locally from the checked-out project.
-- **HTTP readiness fails:** inspect permissions for loopback listeners and
-  temporary files. No external HTTP endpoint is needed.
+- **URI endpoint fails:** confirm the standalone Deployment is ready and the
+  imported `async_timeouts_http_url` points to `/slow`. Check cluster DNS and
+  network policy between the AAP and service projects. Use the Route URL if
+  execution runs outside this cluster.
 - **Many retry messages:** a pending `until` condition produces retry messages;
   compare the final result and recap rather than treating each retry as a failure.
 - **Healthy host waits:** the linear strategy synchronizes task progression.
@@ -147,5 +154,6 @@ an initial temporary archive-source pod, Service, and ConfigMap were removed.
   result in the same execution context before attempting cache cleanup.
 
 Remove the workflow, six templates, and dedicated inventory/source after use.
+Remove the standalone HTTP service with `oc delete -k demos/async-timeouts/service`.
 Retain shared projects and EEs. See the [demo cleanup notes](../README.md#cleanup-and-limitations)
 for interruption behavior and temporary resources.
