@@ -3,37 +3,23 @@
   hosts: async_timeouts_demo
   gather_facts: false
   tasks:
-    - name: Run the positive polling example outside check mode
+    - name: Launch and wait at the same task
+      ansible.builtin.command:
+        argv:
+          - "{{ ansible_playbook_python }}"
+          - "{{ playbook_dir }}/../files/delayed_operation.py"
+          - --delay
+          - "{{ async_timeouts_command_delay | string }}"
+          - --exit-code
+          - "{{ async_timeouts_command_exit_code | string }}"
+          - --host
+          - "{{ inventory_hostname }}"
+      environment:
+        ASYNC_TIMEOUTS_PID_DIRECTORY: "{{ async_timeouts_pid_directory | default('') }}"
+      async: "{{ async_timeouts_execution_timeout }}"
+      poll: "{{ async_timeouts_poll_interval }}"
+      changed_when: false
       when: not ansible_check_mode
-      block:
-        - name: Launch and wait at the same task
-          ansible.builtin.command:
-            argv:
-              - "{{ ansible_playbook_python }}"
-              - "{{ playbook_dir }}/../files/delayed_operation.py"
-              - --delay
-              - "{{ async_timeouts_command_delay | string }}"
-              - --exit-code
-              - "{{ async_timeouts_command_exit_code | string }}"
-              - --host
-              - "{{ inventory_hostname }}"
-          environment:
-            ASYNC_TIMEOUTS_PID_DIRECTORY: "{{ async_timeouts_pid_directory | default('') }}"
-          async: "{{ async_timeouts_execution_timeout }}"
-          poll: "{{ async_timeouts_poll_interval }}"
-          register: __async_timeouts_positive_result
-          changed_when: false
-
-      always:
-        - name: Clean any cache retained after positive polling timed out
-          ansible.builtin.include_tasks: tasks/clean-job.yml
-          vars:
-            async_timeouts_cleanup_job: >-
-              {{ __async_timeouts_positive_result.async_result
-                 | default(__async_timeouts_positive_result) }}
-          when:
-            - not ansible_check_mode
-            - __async_timeouts_positive_result is defined
 
     - name: Show that the launching task completed before continuing
       ansible.builtin.debug:

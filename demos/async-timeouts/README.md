@@ -208,13 +208,19 @@ a particular Ansible version formats debug output.
 
 ## Cleanup and limitations
 
-Normal async runs automatically remove terminal job caches. The standalone HTTP
-service remains available across jobs; remove it separately with
-`oc delete -k demos/async-timeouts/service` when finished. The CLI harness cleans
-up its own temporary HTTP process and files. Positive polling can finish waiting
-before the async wrapper publishes its timeout; its `always` cleanup waits for that terminal
-result. Cleanup polling deliberately accepts the command's failure result so
-the original teaching failure remains the reported failure.
+Positive polling normally removes completed job caches automatically, but it can
+stop waiting before the async wrapper publishes its timeout. The positive-poll
+lesson leaves any retained timeout cache to ephemeral EE teardown. For CLI runs,
+inspect the job result after it finishes and remove a retained cache with
+`ansible.builtin.async_status`, using its `jid` and `mode: cleanup` in the same
+connection context and async directory. The CLI harness drains retained jobs and
+removes their caches outside the teaching playbook.
+
+The standalone HTTP service remains available across jobs; remove it separately
+with `oc delete -k demos/async-timeouts/service` when finished. The CLI harness
+cleans up its own temporary HTTP process and files. Cleanup polling deliberately
+accepts the command's failure result so the original teaching failure remains the
+reported failure.
 
 The role retains unfinished-job caches when polling is exhausted. The operation
 can continue until its async limit. To clean one after it finishes, call

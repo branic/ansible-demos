@@ -368,6 +368,23 @@ def check_examples(base: Path) -> None:
             check_continuation(
                 job, "Demonstrate work between launch and collection", HOSTS
             )
+        else:
+            # The positive-poll lesson leaves timeout caches to EE teardown.
+            # Drain them here so CLI verification cleans its own resources.
+            for cache in (job.work / "async").iterdir():
+                run_job(
+                    base,
+                    f"drain-positive-{cache.name}",
+                    "tests/playbooks/clean-test-job.yml",
+                    {
+                        "async_timeouts_cleanup_job": {
+                            "ansible_job_id": cache.name,
+                            "results_file": str(cache),
+                        }
+                    },
+                    flags=("--limit", "demo2"),
+                    reuse=job,
+                )
         check_cleanup(job)
 
     check_uri_example(base)
