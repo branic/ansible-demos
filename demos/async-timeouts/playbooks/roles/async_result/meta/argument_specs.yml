@@ -1,0 +1,24 @@
+---
+argument_specs:
+  main:
+    short_description: Collect one async result and apply a host failure policy
+    options:
+      async_result_job:
+        type: dict
+        required: true
+        description: Registered result of an async launch using poll zero.
+      async_result_failure_policy:
+        type: str
+        default: fail_host
+        choices:
+          - fail_host
+          - collect_and_exclude
+        description: Fail the host, or record and end its participation.
+      async_result_retries:
+        type: int
+        default: 40
+        description: Maximum number of status polling retries.
+      async_result_delay:
+        type: int
+        default: 1
+        description: Seconds between status polling attempts.

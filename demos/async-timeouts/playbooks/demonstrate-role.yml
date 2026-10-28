@@ -1,0 +1,43 @@
+---
+- name: Collect async results through a reusable role
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Run the role example outside check mode
+      when: not ansible_check_mode
+      block:
+        - name: Validate the demo policy before launching commands
+          ansible.builtin.assert:
+            that:
+              - async_timeouts_failure_policy in ['fail_host', 'collect_and_exclude']
+            quiet: true
+
+        - name: Initialize this job's failed host artifact
+          ansible.builtin.set_stats:
+            data:
+              __async_timeouts_failed_hosts: []
+            per_host: false
+            aggregate: false
+          run_once: true
+
+        - name: Launch the delayed operation
+          ansible.builtin.include_tasks: tasks/launch-operation.yml
+
+        - name: Demonstrate work between launch and collection
+          ansible.builtin.debug:
+            msg: "BEFORE COLLECTION on {{ inventory_hostname }}"
+            verbosity: 0
+
+        - name: Collect the result and apply the selected failure policy
+          ansible.builtin.include_role:
+            name: async_result
+          vars:
+            async_result_job: "{{ __async_timeouts_launch }}"
+            async_result_failure_policy: "{{ async_timeouts_failure_policy }}"
+            async_result_retries: "{{ async_timeouts_poll_retries }}"
+            async_result_delay: "{{ async_timeouts_poll_interval }}"
+
+        - name: Continue on hosts whose operation succeeded
+          ansible.builtin.debug:
+            msg: "ROLE continued on {{ inventory_hostname }}"
+            verbosity: 0

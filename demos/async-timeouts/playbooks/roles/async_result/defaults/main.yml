@@ -1,0 +1,4 @@
+---
+async_result_failure_policy: fail_host
+async_result_retries: 40
+async_result_delay: 1

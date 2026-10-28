@@ -1,0 +1,8 @@
+---
+- name: Finish an intentionally under-polled verification job
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Wait for the operation and remove its terminal cache
+      ansible.builtin.include_tasks: ../../playbooks/tasks/clean-job.yml
+      when: not ansible_check_mode

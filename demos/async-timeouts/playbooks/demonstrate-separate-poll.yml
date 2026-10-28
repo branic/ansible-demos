@@ -1,0 +1,39 @@
+---
+- name: Demonstrate background launch followed by explicit status polling
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Run the separate polling example outside check mode
+      when: not ansible_check_mode
+      block:
+        - name: Launch the delayed operation
+          ansible.builtin.include_tasks: tasks/launch-operation.yml
+
+        - name: Demonstrate work between launch and collection
+          ansible.builtin.debug:
+            msg: "BEFORE COLLECTION on {{ inventory_hostname }}"
+            verbosity: 0
+
+        - name: Collect the asynchronous result explicitly
+          ansible.builtin.async_status:
+            jid: "{{ __async_timeouts_launch.ansible_job_id }}"
+          register: __async_timeouts_inline_result
+          until: __async_timeouts_inline_result is finished
+          retries: "{{ async_timeouts_poll_retries }}"
+          delay: "{{ async_timeouts_poll_interval }}"
+          changed_when: false
+
+      always:
+        - name: Clean the async cache after collection
+          ansible.builtin.include_tasks: tasks/clean-job.yml
+          vars:
+            async_timeouts_cleanup_job: "{{ __async_timeouts_launch }}"
+          when:
+            - not ansible_check_mode
+            - __async_timeouts_launch.ansible_job_id is defined
+
+    - name: Show that only successful hosts continue after collection
+      ansible.builtin.debug:
+        msg: "SEPARATE POLL continued on {{ inventory_hostname }}"
+        verbosity: 0
+      when: not ansible_check_mode

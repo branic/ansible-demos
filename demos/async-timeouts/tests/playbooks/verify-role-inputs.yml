@@ -1,0 +1,23 @@
+---
+- name: Verify the role independently of the demo launcher
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Initialize the failed host artifact for the verification job
+      ansible.builtin.set_stats:
+        data:
+          __async_timeouts_failed_hosts: []
+        per_host: false
+        aggregate: false
+      run_once: true
+      when: not ansible_check_mode
+
+    - name: Invoke the role with verification inputs
+      ansible.builtin.include_role:
+        name: async_result
+
+    - name: Report successful standalone collection
+      ansible.builtin.debug:
+        msg: "STANDALONE continued on {{ inventory_hostname }}"
+        verbosity: 0
+      when: not ansible_check_mode
