@@ -169,6 +169,12 @@ The current URI playbook has no async launch, temporary-directory handling,
 server startup, or teardown tasks. Its only endpoint input is
 `async_timeouts_http_url`.
 
+The URI lesson was subsequently simplified to two requests and a rescue that
+displays the failure. Outcome assertions now live in the CLI harness; a fast
+endpoint no longer makes the teaching job fail. The AAP evidence above records
+the earlier version with assertions in the playbook. The simplified version has
+not yet been revalidated in AAP.
+
 ## Troubleshooting and cleanup
 
 - **Artifact missing or wrong:** check source synchronization, policy values,

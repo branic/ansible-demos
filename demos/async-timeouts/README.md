@@ -50,7 +50,9 @@ separate SSH hosts requires adapting script delivery and interpreter selection.
 
 The URI example calls a [standalone HTTP service](service/README.md) prepared
 before the lesson. It requests a three-second response with `timeout: 1`, rescues
-and checks that timeout, then succeeds with `timeout: 6`. The teaching playbook
+and displays the failure, then succeeds with `timeout: 6`. Outcome assertions
+live in the CLI harness, which verifies the timeout and response content and
+rejects a fast endpoint as an invalid demonstration. The teaching playbook
 contains no server setup, async launch, or teardown. The service is one Python
 container on OpenShift; no VM or separately managed machine is required.
 

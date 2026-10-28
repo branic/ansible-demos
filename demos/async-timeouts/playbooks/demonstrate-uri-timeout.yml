@@ -3,40 +3,21 @@
   hosts: demo1
   gather_facts: false
   tasks:
-    - name: Run the URI example outside check mode
-      when: not ansible_check_mode
+    - name: Demonstrate a socket timeout shorter than the server delay
       block:
-        - name: Demonstrate a socket timeout shorter than the server delay
-          block:
-            - name: Request a three-second response with a one-second socket timeout
-              ansible.builtin.uri:
-                url: "{{ async_timeouts_http_url }}"
-                timeout: 1
-                use_proxy: false
-              register: __async_timeouts_uri_attempt
-
-            - name: Reject an unexpectedly successful short request
-              ansible.builtin.fail:
-                msg: The deliberately slow request should have timed out.
-
-          rescue:
-            - name: Confirm the expected socket timeout was the failure
-              ansible.builtin.assert:
-                that:
-                  - __async_timeouts_uri_attempt.status == -1
-                  - "'timed out' in (__async_timeouts_uri_attempt.msg | lower)"
-                success_msg: "URI socket timeout observed as expected"
-
-        - name: Request the same response with a sufficient socket timeout
+        - name: Request a three-second response with a one-second socket timeout
           ansible.builtin.uri:
             url: "{{ async_timeouts_http_url }}"
-            timeout: 6
+            timeout: 1
             use_proxy: false
-            return_content: true
-          register: __async_timeouts_uri_success
 
-        - name: Verify the successful response
-          ansible.builtin.assert:
-            that:
-              - __async_timeouts_uri_success.json.message == 'Delayed response completed'
-            success_msg: "URI request succeeded with the longer socket timeout"
+      rescue:
+        - name: Show why the short request failed
+          ansible.builtin.debug:
+            msg: "{{ ansible_failed_result.msg }}"
+
+    - name: Request the same response with a sufficient socket timeout
+      ansible.builtin.uri:
+        url: "{{ async_timeouts_http_url }}"
+        timeout: 6
+        use_proxy: false

@@ -432,6 +432,34 @@ def http_fixture(base: Path):
                 require(not process_running(server.pid), "HTTP fixture still running")
 
 
+def check_uri_outcomes(job: Job) -> None:
+    """Validate the timeout and successful response outside the teaching playbook."""
+    short = job.events(
+        "Request a three-second response with a one-second socket timeout"
+    )
+    require(
+        len(short) == 1
+        and short[0]["status"] == "failed"
+        and short[0]["result"].get("status") == -1
+        and "timed out" in short[0]["result"].get("msg", "").lower(),
+        "Expected URI socket timeout was not observed",
+    )
+    require(
+        job.capture["hosts"]["demo1"]["rescued"] == 1
+        and job.events("Show why the short request failed"),
+        "Expected URI timeout not rescued and displayed",
+    )
+    longer = job.events("Request the same response with a sufficient socket timeout")
+    require(
+        len(longer) == 1
+        and longer[0]["status"] == "ok"
+        and longer[0]["result"].get("status") == 200
+        and longer[0]["result"].get("json", {}).get("message")
+        == "Delayed response completed",
+        "URI request did not return the expected successful response",
+    )
+
+
 def check_uri_example(base: Path) -> None:
     """Verify the teaching playbook uses an existing endpoint without managing it."""
     with http_fixture(base) as endpoint:
@@ -442,15 +470,7 @@ def check_uri_example(base: Path) -> None:
                 "playbooks/demonstrate-uri-timeout.yml",
                 {"async_timeouts_http_url": endpoint + "/slow"},
             )
-            require(
-                job.capture["hosts"]["demo1"]["rescued"] == 1,
-                "Expected URI timeout not rescued",
-            )
-            require(
-                job.events("Confirm the expected socket timeout was the failure")
-                and job.events("Verify the successful response"),
-                "URI outcomes not verified",
-            )
+            check_uri_outcomes(job)
             require(
                 not any(
                     event["action"]
@@ -470,12 +490,15 @@ def check_uri_example(base: Path) -> None:
             "uri-wrong-endpoint",
             "playbooks/demonstrate-uri-timeout.yml",
             {"async_timeouts_http_url": endpoint + "/healthz"},
-            expected_rc=2,
         )
-        require(
-            wrong_endpoint.capture["hosts"]["demo1"]["failures"] == 1,
-            "A fast endpoint was incorrectly accepted as a timeout demonstration",
-        )
+        try:
+            check_uri_outcomes(wrong_endpoint)
+        except AssertionError:
+            pass
+        else:
+            raise AssertionError(
+                "A fast endpoint was incorrectly accepted as a timeout demonstration"
+            )
         check_cleanup(wrong_endpoint)
     require(not list(base.glob("http-fixture-*")), "HTTP fixture directory remains")
 
