@@ -1,19 +1,19 @@
 """Serve the URI demo's slow response in OpenShift or a local test process."""
 
 import argparse
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
-from pathlib import Path
 import signal
 import threading
 import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 
 class Handler(BaseHTTPRequestHandler):
     """Handle the delayed demo request and immediate health checks."""
 
-    def do_GET(self) -> None:
+    def handle_get(self) -> None:
         """Delay the response long enough to demonstrate a socket timeout."""
         if self.path == "/healthz":
             body = json.dumps({"status": "ok"}).encode()
@@ -33,7 +33,10 @@ class Handler(BaseHTTPRequestHandler):
             # The first request deliberately disconnects before we respond.
             pass
 
-    def log_message(self, _format: str, *args: object) -> None:
+    # BaseHTTPRequestHandler dispatches GET requests through this required name.
+    do_GET = handle_get
+
+    def log_message(self, *_args: object, **_kwargs: object) -> None:
         """Keep fixture access logs out of the teaching output."""
 
 
@@ -54,7 +57,7 @@ def main() -> None:
         signal.signal(signal.SIGTERM, stop_server)
         signal.signal(signal.SIGINT, stop_server)
         if args.state_directory:
-            state = {
+            state: dict[str, str | int] = {
                 "url": f"http://127.0.0.1:{server.server_port}",
                 "pid": os.getpid(),
             }
