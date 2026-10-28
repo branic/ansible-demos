@@ -27,10 +27,11 @@ the exact tested revision and execution environment.
 
 The mixed role scenario took approximately **17 seconds** per CLI run and
 **20 seconds** per AAP job. The complete AAP collection-and-verification workflow
-took approximately **24 seconds**. URI timing for the standalone service is
-recorded in the latest AAP validation entry. Controller job elapsed time excludes
-queue time but includes
-some runner setup; these are lab observations, not fleet-scale timing guarantees.
+took approximately **24–25 seconds**. The simplified URI lesson took approximately
+**5 seconds** against the local test server and **8 seconds** against the
+OpenShift service in AAP. Controller elapsed time excludes queue time but
+includes some runner setup; these are lab observations, not fleet-scale timing
+guarantees.
 
 All aliases run inside the same CLI environment or AAP EE container. They
 demonstrate separate Ansible host state, not independent machines. The examples
@@ -99,8 +100,9 @@ process markers; normal runs create no PID marker files.
 Run from the repository root with Ansible installed. The async examples need no
 provisioning, privilege escalation, credentials, or external collections. For
 the URI lesson, [deploy the HTTP service](service/README.md#deploy) first using
-`oc`, then obtain its Route hostname. Only service setup/removal requires cluster
-credentials; the teaching playbooks need no machine or OpenShift credentials.
+`oc`, then obtain its Route hostname. Deployment, cleanup, and Route lookup use
+cluster credentials; the teaching playbooks need no machine or OpenShift
+credentials.
 
 ```bash
 async_timeouts_route=$(oc -n async-timeouts-demo get route async-timeouts-http -o jsonpath='{.spec.host}')
@@ -176,8 +178,9 @@ The harness syntax-checks every entrypoint, exercises check mode, tests both
 policies with mixed/all-success/all-unsuccessful outcomes, repeats the mixed
 collection scenario, and passes actual artifacts to downstream processes. It
 also checks invalid role inputs, missing status, polling exhaustion, the native
-examples, repeated HTTP runs, wrong-endpoint rejection, process termination, and terminal cache cleanup. It
-uses Linux `/proc` to verify that standalone command and server processes exit.
+examples, repeated HTTP runs, wrong-endpoint rejection, process termination, and
+terminal cache cleanup. It uses Linux `/proc` to verify that standalone command
+and server processes exit.
 Allow several minutes. On failure, it prints a temporary directory containing
 logs and structured evidence. It does not require access to AAP or OpenShift:
 the harness starts the HTTP test server in Python, outside the teaching playbook.
@@ -208,8 +211,8 @@ a particular Ansible version formats debug output.
 Normal async runs automatically remove terminal job caches. The standalone HTTP
 service remains available across jobs; remove it separately with
 `oc delete -k demos/async-timeouts/service` when finished. The CLI harness cleans
-up its own temporary HTTP process and files. Positive polling can finish waiting before the async
-wrapper publishes its timeout; its `always` cleanup waits for that terminal
+up its own temporary HTTP process and files. Positive polling can finish waiting
+before the async wrapper publishes its timeout; its `always` cleanup waits for that terminal
 result. Cleanup polling deliberately accepts the command's failure result so
 the original teaching failure remains the reported failure.
 

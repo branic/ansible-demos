@@ -34,8 +34,8 @@ full rehearsal against the presentation.
 
 Use launch/startup time for explanation. Timing targets are a rehearsal budget,
 and interactive questions can expand this segment. Validated AAP jobs took
-approximately 9.7 seconds for URI, 20 seconds for each mixed async example, and
-24 seconds for the complete workflow, excluding queue time.
+approximately 8 seconds for the simplified URI lesson, 20 seconds for each mixed
+async example, and 24–25 seconds for the complete workflow, excluding queue time.
 
 ## Observations to emphasize
 

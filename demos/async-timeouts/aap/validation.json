@@ -438,6 +438,91 @@
     "Failed statuses for native polling and fail_host scenarios are expected.",
     "Assertions use controller API events, recaps, artifacts, and inherited child extra variables.",
     "Temporary control/check templates and control workflow were deleted; job history remains.",
-    "No Ansible implementation changes were needed after controller validation."
-  ]
+    "The original validation required no implementation fixes. The later URI service refactor and its additional controller runs are recorded in uri_service_validation."
+  ],
+  "uri_service_validation": {
+    "validation_date": "2026-10-28",
+    "tested_code_revision": "6166162af74848106e726354e19c18c2f7828cc0",
+    "openshift_version": "4.22.14",
+    "namespace": "async-timeouts-demo",
+    "deployment": "async-timeouts-http",
+    "image": "registry.access.redhat.com/ubi9/python-312@sha256:105e70cb265e82beef1687b87b77444a05b410c55d8631e9aa9aa6804fcca45d",
+    "container_python": "3.12.15",
+    "script_sha256": "7344420e88465cbe441d6921241e765417a59e4806de4d10b68ae94d3981da34",
+    "cluster_url": "http://async-timeouts-http.async-timeouts-demo.svc.cluster.local:8080/slow",
+    "route_url": "http://async-timeouts-http-async-timeouts-demo.apps-crc.testing/slow",
+    "pod_uid": "9a4faa0c-39e8-4229-bf52-36964eed277d",
+    "pod_restarts_during_tests": 0,
+    "uri_runs": [
+      {
+        "job_id": 38,
+        "status": "successful",
+        "elapsed_seconds": 7.913,
+        "scm_revision": "6166162af74848106e726354e19c18c2f7828cc0",
+        "recap": {
+          "ok": {
+            "demo1": 3
+          },
+          "changed": {},
+          "failures": {},
+          "rescued": {
+            "demo1": 1
+          },
+          "ignored": {},
+          "dark": {}
+        }
+      },
+      {
+        "job_id": 39,
+        "status": "successful",
+        "elapsed_seconds": 7.999,
+        "scm_revision": "6166162af74848106e726354e19c18c2f7828cc0",
+        "recap": {
+          "ok": {
+            "demo1": 3
+          },
+          "changed": {},
+          "failures": {},
+          "rescued": {
+            "demo1": 1
+          },
+          "ignored": {},
+          "dark": {}
+        }
+      }
+    ],
+    "check_mode": {
+      "job_id": 40,
+      "status": "successful",
+      "elapsed_seconds": 3.174
+    },
+    "wrong_endpoint": {
+      "job_id": 41,
+      "status": "failed",
+      "expected_status": "failed",
+      "elapsed_seconds": 3.405
+    },
+    "regression_workflow": {
+      "id": 42,
+      "name": "demo_workflow_async_collect_and_exclude",
+      "status": "successful",
+      "started": "2026-10-28T22:35:50.755856Z",
+      "finished": "2026-10-28T22:36:15.864984Z",
+      "elapsed": 25.109,
+      "label": "service-update-workflow",
+      "children": [
+        43,
+        44
+      ]
+    },
+    "observations": [
+      "No server setup, async launch, or teardown tasks executed in the URI jobs.",
+      "The same service pod stayed ready with zero restarts across jobs.",
+      "Reapplying identical Kustomize files left every resource unchanged.",
+      "The ConfigMap script matched the tested repository file.",
+      "CLI Route execution also showed exactly one rescued timeout and zero unhandled failures.",
+      "Temporary check and wrong-endpoint templates were deleted."
+    ]
+  },
+  "latest_validated_code_revision": "6166162af74848106e726354e19c18c2f7828cc0"
 }

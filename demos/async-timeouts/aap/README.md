@@ -83,13 +83,13 @@ child template. Use the same inventory and project revision for both nodes.
    with no downstream action for demo2 or demo3. Both jobs and the workflow must
    be Successful. Initialization/exclusion tasks can still put excluded hosts
    in job recaps; inspect actual action messages.
-6. Repeat the workflow to check fresh artifacts and absence of fixture conflicts.
+6. Repeat the workflow to check fresh artifacts and consistent survivor sets.
 7. In temporary copies of the templates/inventory, validate all-success and
    all-operation-error controls using delay 0 and exit codes 0 or 7. With every
    host recorded, the downstream job should exclude all hosts and still succeed.
    Restore or remove these copies before presenting.
 8. Run each main example as job type **Check** in a temporary template copy.
-   Verify no background command or HTTP fixture is launched. Restore type Run.
+   Verify no background command or HTTP request is executed. Restore type Run.
 
 ## Completed lab validation
 
@@ -99,6 +99,13 @@ controller API job events and recaps, rather than treating a completed launch
 or a workflow's top-level status alone as success. The complete sanitized
 [validation evidence](validation.json) records each job's status, revision,
 artifacts, host results, and timing. No credentials are included.
+
+### Original full-matrix validation
+
+These runs validated the initial implementation. Its URI job managed a temporary
+server inside the playbook. The standalone service refactor and its new job IDs
+are recorded separately below; the async role and native async examples retain
+their original behavior.
 
 | Evidence | Value |
 | --- | --- |
@@ -133,6 +140,34 @@ Lab resource IDs are project **7**, inventory **2**, inventory source **8**, job
 templates **9–14**, and workflow template **15**. These IDs belong to this lab,
 not to a portable configuration. The code was tested directly from GitHub;
 an initial temporary archive-source pod, Service, and ConfigMap were removed.
+
+### Standalone HTTP service validation
+
+The refactor was validated against code revision
+`6166162af74848106e726354e19c18c2f7828cc0` on the same branch and AAP/EE versions.
+The service was deployed with `oc apply -k demos/async-timeouts/service` on
+OpenShift **4.22.14**, using Python **3.12.15** in the pinned public UBI image.
+See [service setup and cleanup](../service/README.md) for the complete manifest
+and container image reference.
+
+| Evidence | Result |
+| --- | --- |
+| URI jobs | 38 and 39 Successful; 7.9–8.0 seconds each |
+| URI recap | demo1: `ok=3`, `changed=0`, `rescued=1`, `failed=0`, `ignored=0` |
+| Service access | AAP used the imported ClusterIP URL; CLI execution through the Route also passed |
+| URI Check job | 40 Successful; no HTTP calls or server management tasks executed |
+| Wrong-endpoint job | 41 Failed as intended when `/healthz` returned immediately |
+| Workflow regression | 42 Successful; jobs 43/44 Successful; demo2/demo3 recorded, downstream action only on demo1 |
+| Service lifecycle | Same pod stayed ready with zero restarts across the jobs; no setup/teardown tasks in the lesson |
+| Manifest repeatability | Reapplying unchanged Kustomize files left all resources unchanged |
+| Local verification | Updated URI integration checks, repeated runs, wrong-endpoint rejection, syntax, and check mode passed |
+
+The HTTP container remains running in project `async-timeouts-demo` for the
+presentation. Temporary Check and wrong-endpoint templates were removed. The
+original AAP URI template remains type Run with no additional launch prompts.
+The current URI playbook has no async launch, temporary-directory handling,
+server startup, or teardown tasks. Its only endpoint input is
+`async_timeouts_http_url`.
 
 ## Troubleshooting and cleanup
 
