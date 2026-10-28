@@ -7,10 +7,11 @@ host failure policies.
 
 ## Execution modes and validation
 
-CLI verification is included. **AAP 2.7 controller and EE validation is pending**;
-the AAP instructions are a lab acceptance procedure, not evidence of a completed
-controller run. Separate CLI processes verify real artifact values but cannot
-prove controller routing.
+Supports **both CLI and AAP 2.7**. The CLI acceptance harness passed, and actual
+controller runs verified the examples, both policies, artifact inheritance,
+Success-link routing, repeat runs, controls, and check mode. See the
+[AAP validation record](aap/README.md#completed-lab-validation) for job IDs and
+the exact tested revision and execution environment.
 
 | Component | Requirement / validation |
 | --- | --- |
@@ -18,15 +19,16 @@ prove controller routing.
 | CLI Python | 3.14.8 on Linux |
 | ansible-lint | Repository-pinned 26.6.0; production profile, strict |
 | Lint runtime ansible-core | 2.21.5 |
-| AAP | Target 2.7; controller validation pending |
-| Execution environment | Existing AAP 2.7-compatible EE with Python 3 and ansible-core; tested image digest pending |
+| AAP | Verified with 2.7.20261019; automation controller 4.8.12 |
+| Execution environment | Supported RHEL 9 EE; ansible-core 2.16.19, Python 3.12.15, RHEL 9.8; pinned image digest in the AAP validation record |
 | Collections | Only `ansible.builtin`; no Galaxy installation required |
 | Targets | Three local inventory aliases; no external machines or machine credentials |
 
-The mixed role scenario took approximately **17 seconds** per CLI run in this
-environment, and the URI example took 7–8 seconds. These are observed local
-durations, not AAP timings. The AAP rehearsal target remains approximately
-20–30 seconds per role run, excluding controller queue and startup time.
+The mixed role scenario took approximately **17 seconds** per CLI run and
+**20 seconds** per AAP job. The complete AAP collection-and-verification workflow
+took approximately **24 seconds**. The URI example took 7–8 seconds locally and
+9.7 seconds in AAP. Controller job elapsed time excludes queue time but includes
+some runner setup; these are lab observations, not fleet-scale timing guarantees.
 
 All aliases run inside the same CLI environment or AAP EE container. They
 demonstrate separate Ansible host state, not independent machines. The examples
@@ -183,6 +185,13 @@ resources behind. Collecting an already-cleaned job ID fails by design.
 
 The strict production lint check applies without skips or suppressions. Review
 these design properties separately; a lint pass alone cannot establish them.
+
+The AAP EE's older ansible-core returns numeric `started`/`finished` values in
+raw async results; newer CLI versions return booleans. The examples use the
+`is finished` test and explicit boolean conversion where needed. In the tested
+EE, debug summaries display return codes as strings, while raw command results
+retain numeric `rc` values. Compare the actual value rather than relying on how
+a particular Ansible version formats debug output.
 
 ## Cleanup and limitations
 

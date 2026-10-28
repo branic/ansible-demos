@@ -7,8 +7,9 @@ full rehearsal against the presentation.
 
 ## Before recording
 
-- Finish [AAP validation](aap/README.md#acceptance-procedure), record the EE digest,
-  and synchronize the demonstrated revision. Run the CLI harness and strict lint.
+- Review the [completed AAP validation](aap/README.md#completed-lab-validation)
+  and synchronize the demonstrated revision. Repeat acceptance checks when
+  changing code, platform, or EE. Run the CLI harness and strict lint.
 - Keep inventory defaults and fixed template policies. Confirm type Run, blank
   limits/tags, one slice, and no surveys or privilege escalation.
 - Open each playbook and the role's collection task file in an editor with
@@ -29,7 +30,9 @@ full rehearsal against the presentation.
 | 13:30–15:00 | Open reference role and recap observations | Refer to the earlier workflow pattern; point to `collect_async_status` for broader capabilities |
 
 Use launch/startup time for explanation. Timing targets are a rehearsal budget,
-not measured AAP execution times; interactive questions can expand this segment.
+and interactive questions can expand this segment. Validated AAP jobs took
+approximately 9.7 seconds for URI, 20 seconds for each mixed async example, and
+24 seconds for the complete workflow, excluding queue time.
 
 ## Observations to emphasize
 
@@ -45,6 +48,9 @@ not measured AAP execution times; interactive questions can expand this segment.
 - The failed-host list is an output artifact. Reference its established workflow
   handoff briefly; concentrate on collecting and processing async results.
 - These are separate Ansible host identities inside one EE, not three machines.
+- In the validated EE, raw `finished` values are 0/1 and summary return codes
+  appear as strings. The timeout has no command return code. Use these observed
+  results when choosing illustrative YAML and output screenshots.
 
 ## After lab validation
 

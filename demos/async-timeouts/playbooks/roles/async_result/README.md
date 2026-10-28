@@ -77,9 +77,10 @@ collection if required filesystem cleanup itself fails.
 
 ## Supported execution and limitations
 
-The demo uses POSIX local aliases, Python 3, and only `ansible.builtin`. CLI
-validation and exact versions are recorded in the [demo README](../../../README.md).
-AAP 2.7 validation remains pending until tested in the selected EE.
+The demo uses POSIX local aliases, Python 3, and only `ansible.builtin`. CLI and
+AAP 2.7 validation passed; exact versions are recorded in the
+[demo README](../../../README.md). Controller tests used ansible-core 2.16.19
+and Python 3.12.15 in the supported RHEL 9 EE.
 
 The role validates supplied arguments in check mode but skips collection and
 failure-policy execution. Caller examples skip background launches in check mode.

@@ -1,13 +1,17 @@
 # Configure and validate the demo in AAP 2.7
 
-Controller execution is **pending lab validation**. These are manual lab setup
-instructions. Record actual results and the selected EE image digest before
-claiming AAP support or aligning slides with controller output.
+Controller and EE validation passed on **AAP 2.7.20261019**. The manual setup
+instructions below reproduce the demo; the
+[completed lab validation](#completed-lab-validation) records actual job results
+and the selected image digest. Repeat acceptance checks when changing the code,
+platform, or EE.
 
 ## Project, execution environment, and inventory
 
-1. Create or reuse an SCM project pointing to this repository and the demo
-   revision. Synchronize it before creating templates.
+1. Create or reuse an SCM project pointing to
+   `https://github.com/branic/ansible-demos.git` and the demo revision. The lab
+   project is `demo_async_timeouts_project`, using branch
+   `feature/async-timeouts-demo`. Synchronize it before creating templates.
 2. Choose an existing AAP 2.7-compatible EE containing Python 3 and ansible-core.
    No external collections, Python packages, or OS services are required.
 3. Create inventory `demo_async_timeouts`. Add a **Sourced from a Project** source
@@ -82,20 +86,48 @@ child template. Use the same inventory and project revision for both nodes.
 8. Run each main example as job type **Check** in a temporary template copy.
    Verify no background command or HTTP fixture is launched. Restore type Run.
 
-Record the completed lab validation here:
+## Completed lab validation
+
+Validated on October 28, 2026, against
+`https://basic-aap-aap-demo.apps-crc.testing`. All acceptance assertions checked
+controller API job events and recaps, rather than treating a completed launch
+or a workflow's top-level status alone as success. The complete sanitized
+[validation evidence](validation.json) records each job's status, revision,
+artifacts, host results, and timing. No credentials are included.
 
 | Evidence | Value |
 | --- | --- |
-| AAP version | Pending; target 2.7 |
-| Project revision | Pending |
-| EE registry reference and digest | Pending |
-| EE ansible-core / Python versions | Pending |
-| URI / native example job IDs | Pending |
-| Fail-host job ID and status | Pending |
-| Collection workflow and child job IDs/statuses | Pending |
-| Artifact and survivor verification | Pending |
-| Repeat/control/check-mode results | Pending |
-| Role run duration excluding queue/startup | Pending; target approximately 20–30 seconds |
+| AAP version | 2.7.20261019; automation controller 4.8.12 |
+| Tested code revision | `0c367892e5732ca7fbcb5813e7a5e653390cb3d9` on `feature/async-timeouts-demo` |
+| EE registry reference and digest | `registry.redhat.io/ansible-automation-platform-27/ee-supported-rhel9@sha256:b08dcf736e08e75c4c6b462545bbce85690cc55c45fee3d0eb1516a28b149473` |
+| EE ansible-core / Python / OS | 2.16.19 / 3.12.15 / RHEL 9.8 |
+| URI / native example jobs | 7 Successful; 8 and 9 Failed as intended |
+| Fail-host role job | 10 Failed as intended; only demo1 continued |
+| Collection workflow | 11 Successful; collection job 12 and verification job 13 Successful |
+| Repeat workflow | 14 Successful; collection job 15 and verification job 16 Successful |
+| Artifact and survivor verification | Both mixed workflows exported demo2/demo3, inherited the actual artifact in the child, and ran downstream work only on demo1 |
+| All-success control | Job 17 Successful; workflow 18 and jobs 19/20 Successful; empty artifact and all three hosts verified |
+| All-unsuccessful control | Job 21 Failed as intended; workflow 22 and jobs 23/24 Successful; all three hosts recorded and none performed downstream work |
+| Check-mode jobs | 25–30 Successful; no background commands, HTTP operations, cache operations, or stats publication executed |
+| Mixed role job duration | 19.9–20.2 seconds of controller elapsed time |
+| Complete mixed workflow duration | 23.9–24.1 seconds of controller elapsed time |
+
+Controller elapsed time excludes queue time and includes some runner setup.
+The async execution limit remains 10 seconds: wrapper enforcement and collection
+overhead explain the longer observed job duration. The URI job took 9.7 seconds,
+and native polling jobs took 19.7–19.9 seconds.
+
+The mixed collection recaps had `rescued=1`, `failed=0`, and `ignored=0` on demo2
+and demo3. The fail-host recap had `rescued=1` plus `failed=1` on each. Artifact
+list order differed between repeats, as expected. Temporary control/check-mode
+templates and the temporary control workflow were removed after validation;
+the six presentation templates and main workflow remain available with their
+original fixed policies and inventory scenarios.
+
+Lab resource IDs are project **7**, inventory **2**, inventory source **8**, job
+templates **9–14**, and workflow template **15**. These IDs belong to this lab,
+not to a portable configuration. The code was tested directly from GitHub;
+an initial temporary archive-source pod, Service, and ConfigMap were removed.
 
 ## Troubleshooting and cleanup
 

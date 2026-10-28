@@ -1,0 +1,443 @@
+{
+  "validation_date": "2026-10-28",
+  "controller_url": "https://basic-aap-aap-demo.apps-crc.testing",
+  "aap_version": "2.7.20261019",
+  "automation_controller_version": "4.8.12",
+  "repository": "https://github.com/branic/ansible-demos.git",
+  "branch": "feature/async-timeouts-demo",
+  "tested_code_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+  "execution_environment": {
+    "image": "registry.redhat.io/ansible-automation-platform-27/ee-supported-rhel9@sha256:b08dcf736e08e75c4c6b462545bbce85690cc55c45fee3d0eb1516a28b149473",
+    "ansible_core": "2.16.19",
+    "python": "3.12.15",
+    "os": "Red Hat Enterprise Linux 9.8"
+  },
+  "resources": {
+    "project": 7,
+    "inventory": 2,
+    "inventory_source": 8,
+    "templates": {
+      "uri": 9,
+      "positive": 10,
+      "separate": 11,
+      "fail": 12,
+      "collect": 13,
+      "verify": 14
+    },
+    "workflow": 15,
+    "workflow_nodes": [
+      1,
+      2
+    ]
+  },
+  "cases": [
+    {
+      "case": "intro-uri",
+      "job_id": 7,
+      "status": "successful",
+      "elapsed_seconds": 9.699,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {
+        "demo1": 1
+      },
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "intro-positive",
+      "job_id": 8,
+      "status": "failed",
+      "elapsed_seconds": 19.696,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {
+        "demo3": 1,
+        "demo2": 1
+      },
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "intro-separate",
+      "job_id": 9,
+      "status": "failed",
+      "elapsed_seconds": 19.944,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {
+        "demo3": 1,
+        "demo2": 1
+      },
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "mixed-fail-host",
+      "job_id": 10,
+      "status": "failed",
+      "elapsed_seconds": 20.213,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": []
+      },
+      "failures": {
+        "demo2": 1,
+        "demo3": 1
+      },
+      "rescued": {
+        "demo3": 1,
+        "demo2": 1
+      },
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": [
+        "demo1"
+      ]
+    },
+    {
+      "case": "mixed-workflow-collect",
+      "job_id": 12,
+      "status": "successful",
+      "elapsed_seconds": 19.975,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": [
+          "demo2",
+          "demo3"
+        ]
+      },
+      "failures": {},
+      "rescued": {
+        "demo3": 1,
+        "demo2": 1
+      },
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": [
+        "demo1"
+      ]
+    },
+    {
+      "case": "mixed-workflow-verify",
+      "job_id": 13,
+      "status": "successful",
+      "elapsed_seconds": 3.414,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {},
+      "verification_hosts": [
+        "demo1"
+      ],
+      "inherited_failed_hosts": [
+        "demo2",
+        "demo3"
+      ],
+      "workflow_job_id": 11
+    },
+    {
+      "case": "mixed-workflow-repeat-collect",
+      "job_id": 15,
+      "status": "successful",
+      "elapsed_seconds": 19.921,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": [
+          "demo3",
+          "demo2"
+        ]
+      },
+      "failures": {},
+      "rescued": {
+        "demo3": 1,
+        "demo2": 1
+      },
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": [
+        "demo1"
+      ]
+    },
+    {
+      "case": "mixed-workflow-repeat-verify",
+      "job_id": 16,
+      "status": "successful",
+      "elapsed_seconds": 3.414,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {},
+      "verification_hosts": [
+        "demo1"
+      ],
+      "inherited_failed_hosts": [
+        "demo3",
+        "demo2"
+      ],
+      "workflow_job_id": 14
+    },
+    {
+      "case": "all-success-fail-host",
+      "job_id": 17,
+      "status": "successful",
+      "elapsed_seconds": 4.66,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": []
+      },
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": [
+        "demo1",
+        "demo2",
+        "demo3"
+      ]
+    },
+    {
+      "case": "all-success-collect",
+      "job_id": 19,
+      "status": "successful",
+      "elapsed_seconds": 4.64,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": []
+      },
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": [
+        "demo1",
+        "demo2",
+        "demo3"
+      ]
+    },
+    {
+      "case": "all-success-verify",
+      "job_id": 20,
+      "status": "successful",
+      "elapsed_seconds": 3.417,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {},
+      "verification_hosts": [
+        "demo1",
+        "demo2",
+        "demo3"
+      ],
+      "inherited_failed_hosts": [],
+      "workflow_job_id": 18
+    },
+    {
+      "case": "all-unsuccessful-fail-host",
+      "job_id": 21,
+      "status": "failed",
+      "elapsed_seconds": 4.631,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": []
+      },
+      "failures": {
+        "demo1": 1,
+        "demo2": 1,
+        "demo3": 1
+      },
+      "rescued": {
+        "demo3": 1,
+        "demo2": 1,
+        "demo1": 1
+      },
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": []
+    },
+    {
+      "case": "all-unsuccessful-collect",
+      "job_id": 23,
+      "status": "successful",
+      "elapsed_seconds": 4.417,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {
+        "__async_timeouts_failed_hosts": [
+          "demo2",
+          "demo1",
+          "demo3"
+        ]
+      },
+      "failures": {},
+      "rescued": {
+        "demo2": 1,
+        "demo1": 1,
+        "demo3": 1
+      },
+      "ignored": {},
+      "unreachable": {},
+      "continuation_hosts": []
+    },
+    {
+      "case": "all-unsuccessful-verify",
+      "job_id": 24,
+      "status": "successful",
+      "elapsed_seconds": 3.157,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {},
+      "verification_hosts": [],
+      "inherited_failed_hosts": [
+        "demo2",
+        "demo1",
+        "demo3"
+      ],
+      "workflow_job_id": 22
+    },
+    {
+      "case": "check-uri",
+      "job_id": 25,
+      "status": "successful",
+      "elapsed_seconds": 3.403,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "check-positive",
+      "job_id": 26,
+      "status": "successful",
+      "elapsed_seconds": 3.149,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "check-separate",
+      "job_id": 27,
+      "status": "successful",
+      "elapsed_seconds": 3.156,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "check-fail",
+      "job_id": 28,
+      "status": "successful",
+      "elapsed_seconds": 3.183,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "check-collect",
+      "job_id": 29,
+      "status": "successful",
+      "elapsed_seconds": 3.388,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    },
+    {
+      "case": "check-verify",
+      "job_id": 30,
+      "status": "successful",
+      "elapsed_seconds": 3.411,
+      "scm_revision": "0c367892e5732ca7fbcb5813e7a5e653390cb3d9",
+      "artifacts": {},
+      "failures": {},
+      "rescued": {},
+      "ignored": {},
+      "unreachable": {}
+    }
+  ],
+  "workflows": [
+    {
+      "id": 11,
+      "name": "demo_workflow_async_collect_and_exclude",
+      "status": "successful",
+      "started": "2026-10-28T19:32:25.885142Z",
+      "finished": "2026-10-28T19:32:49.942426Z",
+      "elapsed": 24.057,
+      "label": "mixed-workflow",
+      "children": [
+        12,
+        13
+      ]
+    },
+    {
+      "id": 14,
+      "name": "demo_workflow_async_collect_and_exclude",
+      "status": "successful",
+      "started": "2026-10-28T19:32:51.279673Z",
+      "finished": "2026-10-28T19:33:15.207000Z",
+      "elapsed": 23.927,
+      "label": "mixed-workflow-repeat",
+      "children": [
+        15,
+        16
+      ]
+    },
+    {
+      "id": 18,
+      "name": "demo_validation_control_workflow",
+      "status": "successful",
+      "started": "2026-10-28T19:33:34.194101Z",
+      "finished": "2026-10-28T19:33:42.781323Z",
+      "elapsed": 8.587,
+      "label": "all-success",
+      "children": [
+        19,
+        20
+      ]
+    },
+    {
+      "id": 22,
+      "name": "demo_validation_control_workflow",
+      "status": "successful",
+      "started": "2026-10-28T19:33:53.919382Z",
+      "finished": "2026-10-28T19:34:02.247623Z",
+      "elapsed": 8.328,
+      "label": "all-unsuccessful",
+      "children": [
+        23,
+        24
+      ]
+    }
+  ],
+  "notes": [
+    "Job elapsed time excludes queue time and includes some runner setup.",
+    "Failed statuses for native polling and fail_host scenarios are expected.",
+    "Assertions use controller API events, recaps, artifacts, and inherited child extra variables.",
+    "Temporary control/check templates and control workflow were deleted; job history remains.",
+    "No Ansible implementation changes were needed after controller validation."
+  ]
+}
