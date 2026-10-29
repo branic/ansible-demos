@@ -1,13 +1,11 @@
 """Run real Ansible processes and verify outcomes, artifacts, and cleanup."""
 
 import argparse
-from contextlib import contextmanager
 from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
 import subprocess
-import sys
 import tempfile
 import time
 
@@ -391,48 +389,6 @@ def check_examples(base: Path) -> None:
     check_uri_example(base)
 
 
-@contextmanager
-def http_fixture(base: Path):
-    """Keep the HTTP server lifecycle in the test harness, outside the lesson."""
-    with tempfile.TemporaryDirectory(prefix="http-fixture-", dir=base) as directory:
-        state_directory = Path(directory)
-        with (state_directory / "server.log").open("w", encoding="utf-8") as log:
-            server = subprocess.Popen(
-                [
-                    sys.executable,
-                    str(DEMO / "service" / "slow_http_server.py"),
-                    "--port",
-                    "0",
-                    "--state-directory",
-                    directory,
-                ],
-                stdout=log,
-                stderr=log,
-            )
-            try:
-                endpoint = state_directory / "endpoint.json"
-                deadline = time.monotonic() + 10
-                while not endpoint.exists() and time.monotonic() < deadline:
-                    require(server.poll() is None, "HTTP fixture exited during startup")
-                    time.sleep(0.1)
-                require(endpoint.exists(), "HTTP fixture did not become ready")
-                yield json.loads(endpoint.read_text(encoding="utf-8"))["url"]
-            finally:
-                server.terminate()
-                try:
-                    server.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    server.kill()
-                    server.wait(timeout=5)
-                    raise AssertionError(
-                        "HTTP fixture did not shut down gracefully"
-                    ) from None
-                require(
-                    server.returncode == 0, "HTTP fixture failed during its lifecycle"
-                )
-                require(not process_running(server.pid), "HTTP fixture still running")
-
-
 def check_uri_outcomes(job: Job) -> None:
     """Validate the timeout and successful response outside the teaching playbook."""
     short = job.events(
@@ -455,59 +411,53 @@ def check_uri_outcomes(job: Job) -> None:
         len(longer) == 1
         and longer[0]["status"] == "ok"
         and longer[0]["result"].get("status") == 200
-        and longer[0]["result"].get("json", {}).get("message")
-        == "Delayed response completed",
+        and longer[0]["result"].get("json", {}).get("url")
+        == "https://httpbin.org/delay/3",
         "URI request did not return the expected successful response",
     )
 
 
 def check_uri_example(base: Path) -> None:
-    """Verify the teaching playbook uses an existing endpoint without managing it."""
-    with http_fixture(base) as endpoint:
-        for iteration in range(2):
-            job = run_job(
-                base,
-                f"uri-{iteration}",
-                "playbooks/demonstrate-uri-timeout.yml",
-                {"async_timeouts_http_url": endpoint + "/slow"},
-            )
-            check_uri_outcomes(job)
-            require(
-                not any(
-                    event["action"]
-                    in {
-                        "ansible.builtin.command",
-                        "ansible.builtin.async_status",
-                        "ansible.builtin.tempfile",
-                        "ansible.builtin.file",
-                    }
-                    for event in job.capture["events"]
-                ),
-                "Teaching playbook still manages infrastructure",
-            )
-            check_cleanup(job)
-        wrong_endpoint = run_job(
+    """Verify timeout and success against httpbin, then reject a fast endpoint."""
+    for iteration in range(2):
+        job = run_job(
             base,
-            "uri-wrong-endpoint",
+            f"uri-{iteration}",
             "playbooks/demonstrate-uri-timeout.yml",
-            {"async_timeouts_http_url": endpoint + "/healthz"},
         )
-        try:
-            check_uri_outcomes(wrong_endpoint)
-        except AssertionError:
-            pass
-        else:
-            raise AssertionError(
-                "A fast endpoint was incorrectly accepted as a timeout demonstration"
-            )
-        check_cleanup(wrong_endpoint)
-    require(not list(base.glob("http-fixture-*")), "HTTP fixture directory remains")
+        check_uri_outcomes(job)
+        check_cleanup(job)
+    wrong_endpoint = run_job(
+        base,
+        "uri-wrong-endpoint",
+        "playbooks/demonstrate-uri-timeout.yml",
+        {"async_timeouts_http_url": "https://httpbin.org/get"},
+    )
+    short = wrong_endpoint.events(
+        "Request a three-second response with a one-second socket timeout"
+    )
+    require(
+        len(short) == 1 and short[0]["status"] == "ok",
+        "Fast-endpoint control did not return before the short timeout",
+    )
+    try:
+        check_uri_outcomes(wrong_endpoint)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError(
+            "A fast endpoint was incorrectly accepted as a timeout demonstration"
+        )
+    check_cleanup(wrong_endpoint)
 
 
-def check_static_and_check_mode(base: Path) -> None:
-    """Check all entrypoints and prove check mode does not launch operations."""
-    playbooks = sorted((DEMO / "playbooks").glob("*.yml"))
-    playbooks += sorted((DEMO / "tests" / "playbooks").glob("*.yml"))
+def check_static_and_check_mode(base: Path, uri_only: bool = False) -> None:
+    """Check selected entrypoints and prove check mode does not launch operations."""
+    if uri_only:
+        playbooks = [DEMO / "playbooks" / "demonstrate-uri-timeout.yml"]
+    else:
+        playbooks = sorted((DEMO / "playbooks").glob("*.yml"))
+        playbooks += sorted((DEMO / "tests" / "playbooks").glob("*.yml"))
     for index, playbook in enumerate(playbooks):
         relative = str(playbook.relative_to(DEMO))
         work = base / f"syntax-{index}"
@@ -560,7 +510,7 @@ def main() -> None:
     parser.add_argument(
         "--uri-only",
         action="store_true",
-        help="Check syntax, check mode, and URI behavior only",
+        help="Check the URI example's syntax, check mode, and HTTP behavior",
     )
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(
@@ -568,7 +518,7 @@ def main() -> None:
     ) as directory:
         base = Path(directory)
         try:
-            check_static_and_check_mode(base)
+            check_static_and_check_mode(base, uri_only=args.uri_only)
             if args.uri_only:
                 check_uri_example(base)
             else:

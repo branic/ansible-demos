@@ -15,7 +15,7 @@ Run with the **CLI or AAP**.
 | AAP | 2.7 |
 | Collections | None |
 | Targets | Inventory aliases: `demo1`, `demo2`, `demo3` |
-| URI endpoint | Standalone container on OpenShift; see [service setup](service/README.md) |
+| URI endpoint | HTTPS access to `httpbin.org` |
 
 ## Teaching sequence
 
@@ -27,9 +27,8 @@ Run with the **CLI or AAP**.
 | `demonstrate-role.yml` | Reuse collection and error processing | Depends on the selected policy |
 | `verify-survivors.yml` | Verify downstream exclusion | Exit 0; inherited artifact determines participating hosts |
 
-The URI example calls a [standalone HTTP service](service/README.md) prepared
-before the lesson. It requests a three-second response with `timeout: 1`, rescues
-and displays the failure, then succeeds with `timeout: 6`.
+The URI example calls [httpbin's three-second delay endpoint](https://httpbin.org/delay/3)
+with `timeout: 1`, rescues and displays the failure, then succeeds with `timeout: 6`.
 
 `uri.timeout` is a **socket-level timeout**, not a universal overall task deadline.
 `async` limits an asynchronous task's execution; enforcement and collection add
@@ -57,7 +56,7 @@ The inventory defines these per-host defaults for the
 | `async_timeouts_poll_interval` | `1` | Positive poll interval or explicit status retry delay |
 | `async_timeouts_poll_retries` | `40` | Explicit status retry count |
 | `async_timeouts_failure_policy` | `fail_host` | `fail_host` or `collect_and_exclude` for the role example |
-| `async_timeouts_http_url` | ClusterIP URL documented in [service setup](service/README.md#endpoints) | Complete URI lesson URL, including `/slow`; use the Route URL for CLI access |
+| `async_timeouts_http_url` | `https://httpbin.org/delay/3` | Delayed-response endpoint for the URI example |
 
 All inputs are non-secret. Put persistent scenario changes in inventory; use
 extra variables for policy comparisons and temporary controls.
@@ -66,14 +65,11 @@ See the [role README](playbooks/roles/async_result/README.md) for inputs and out
 
 ## Run with the CLI
 
-Run from the repository root. For the URI lesson,
-[deploy the HTTP service](service/README.md#deploy) first.
+Run from the repository root.
 
 ```bash
-async_timeouts_route=$(oc -n async-timeouts-demo get route async-timeouts-http -o jsonpath='{.spec.host}')
 ansible-playbook -i demos/async-timeouts/inventory \
-  demos/async-timeouts/playbooks/demonstrate-uri-timeout.yml \
-  -e "async_timeouts_http_url=http://${async_timeouts_route}/slow"
+  demos/async-timeouts/playbooks/demonstrate-uri-timeout.yml
 
 ansible-playbook -i demos/async-timeouts/inventory \
   demos/async-timeouts/playbooks/demonstrate-positive-poll.yml
@@ -143,7 +139,5 @@ wait for the job to finish, then remove retained caches with
 execution context. Polling exhaustion and cache cleanup do not cancel a running
 operation.
 
-Remove the HTTP service and its dedicated OpenShift project with
-`oc delete -k demos/async-timeouts/service`. In AAP, remove both workflows, six
-job templates, and the dedicated inventory/source. Remove project and EE
-registrations only if dedicated to this demo.
+In AAP, remove both workflows, six job templates, and the dedicated inventory/source.
+Remove project and EE registrations only if dedicated to this demo.

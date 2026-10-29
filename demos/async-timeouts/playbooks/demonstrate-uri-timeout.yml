@@ -9,7 +9,6 @@
           ansible.builtin.uri:
             url: "{{ async_timeouts_http_url }}"
             timeout: 1
-            use_proxy: false
 
       rescue:
         - name: Show why the short request failed
@@ -20,4 +19,3 @@
       ansible.builtin.uri:
         url: "{{ async_timeouts_http_url }}"
         timeout: 6
-        use_proxy: false

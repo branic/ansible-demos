@@ -17,11 +17,7 @@ and execution environment (EE).
    connection settings. Synchronize the source, importing variables.
 4. Confirm group `async_timeouts_demo` contains demo1, demo2, and demo3, with
    their delay and exit-code values imported.
-5. [Deploy the standalone HTTP service](../service/README.md#deploy) once before
-   running the URI lesson. Its container runs in the `async-timeouts-demo`
-   OpenShift project. Confirm AAP execution pods can resolve and reach its
-   ClusterIP Service URL from the imported `async_timeouts_http_url` variable.
-   An AAP instance outside that cluster can use the Route URL instead.
+5. Confirm the EE can reach `https://httpbin.org/delay/3` for the URI example.
 
 Substitute your organization's naming prefix for `demo_` as needed.
 
@@ -86,14 +82,11 @@ child template. Use the same inventory and project revision for both nodes.
 - **Child does not run:** inspect the collection job's final status and the
   Success link. Unreachable hosts and failed launches can still
   cause unhandled failures.
-- **URI endpoint fails:** confirm the standalone Deployment is ready and the
-  imported `async_timeouts_http_url` points to `/slow`. Check cluster DNS and
-  network policy between the AAP and service projects. Use the Route URL if
-  execution runs outside this cluster.
+- **URI endpoint fails:** check HTTPS access to `httpbin.org` from the EE and
+  confirm `async_timeouts_http_url` points to `/delay/3`.
 - **Polling exhausted:** the operation can still be running. Inspect the async
   result in the same execution context before attempting cache cleanup.
 
 Remove both workflows, six job templates, and dedicated inventory/source after use.
-Remove the standalone HTTP service with `oc delete -k demos/async-timeouts/service`.
 Retain shared projects and EEs. See the [demo cleanup notes](../README.md#cleanup-and-limitations)
 for async cache handling.
