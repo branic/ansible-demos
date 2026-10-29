@@ -133,11 +133,10 @@ python3 demos/async-timeouts/tests/verify_cli.py
 
 Run the async examples in normal mode; they do not support check mode.
 
-Async job caches are discarded when an ephemeral EE is removed. For CLI runs,
-wait for the job to finish, then remove retained caches with
-`ansible.builtin.async_status`, using its `jid` and `mode: cleanup` in the same
-execution context. Polling exhaustion and cache cleanup do not cancel a running
-operation.
+The `poll: 0` examples use `always` sections to remove job caches with
+`ansible.builtin.async_status`, `mode: cleanup`, on success and failure. The role
+cleans up before ending a host's participation. Set the polling budget to cover
+the async limit; cleanup does not wait for or cancel an unfinished operation.
 
 In AAP, remove both workflows, six job templates, and the dedicated inventory/source.
 Remove project and EE registrations only if dedicated to this demo.

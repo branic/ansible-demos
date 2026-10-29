@@ -167,6 +167,31 @@ def check_cleanup(job: Job) -> None:
     )
 
 
+def check_explicit_cleanup(job: Job, task: str) -> None:
+    """Require the playbook itself to remove every launched poll-zero job cache."""
+    cleanup = job.events(task)
+    launches = job.events("Launch the delayed operation")
+    expected = {event["host"]: event["result"]["ansible_job_id"] for event in launches}
+    require(len(cleanup) == len(expected), "Not every launched job ran cache cleanup")
+    for event in cleanup:
+        require(
+            event["status"] == "ok"
+            and event["result"].get("ansible_job_id") == expected[event["host"]]
+            and event["result"].get("erased"),
+            f"Cache cleanup did not remove the launched job: {event}",
+        )
+        position = job.capture["events"].index(event)
+        for later in job.capture["events"][:position]:
+            require(
+                later["host"] != event["host"]
+                or not later["task"].endswith(
+                    "Collect | End this host after recording it"
+                ),
+                "Host was ended before cache cleanup",
+            )
+    require(not list((job.work / "async").iterdir()), f"Cache remains in {job.work}")
+
+
 def drain_jobs(job: Job, launch_task: str = "Launch the delayed operation") -> None:
     """Finish retained jobs and remove caches in each launching host's context."""
     for event in job.events(launch_task):
@@ -181,6 +206,24 @@ def drain_jobs(job: Job, launch_task: str = "Launch the delayed operation") -> N
                 flags=("--limit", event["host"]),
                 reuse=job,
             )
+
+
+def finish_underpolled_job(job: Job) -> None:
+    """Let a deliberately unfinished fixture complete, then remove its final cache."""
+    launch = job.events("Launch the delayed operation")[0]["result"]
+    pid = int((job.work / "pids" / "demo1.pid").read_text(encoding="utf-8"))
+    require(process_running(pid), "Polling exhaustion did not leave work running")
+    deadline = time.monotonic() + 20
+    while process_running(pid) and time.monotonic() < deadline:
+        time.sleep(0.1)
+    require(not process_running(pid), "Unfinished fixture did not stop")
+    cache = Path(launch["results_file"])
+    deadline = time.monotonic() + 5
+    while not cache.exists() and time.monotonic() < deadline:
+        time.sleep(0.1)
+    require(cache.exists(), "Wrapper did not publish the final fixture result")
+    drain_jobs(job)
+    check_cleanup(job)
 
 
 def check_mixed(base: Path, policy: str, label: str) -> None:
@@ -221,7 +264,7 @@ def check_mixed(base: Path, policy: str, label: str) -> None:
         len(list((job.work / "pids").glob("*.pid"))) == 3,
         "Standalone commands did not publish termination-check markers",
     )
-    drain_jobs(job)
+    check_explicit_cleanup(job, "Collect | Remove the async job cache")
     check_cleanup(job)
     if collect:
         downstream = run_job(
@@ -258,7 +301,7 @@ def check_controls(base: Path) -> None:
             check_continuation(
                 job, "Continue on hosts whose operation succeeded", HOSTS - failed
             )
-            drain_jobs(job)
+            check_explicit_cleanup(job, "Collect | Remove the async job cache")
             check_cleanup(job)
             if collect:
                 downstream = run_job(
@@ -310,11 +353,17 @@ def check_role_edges(base: Path) -> None:
                 "async_result_job": {"ansible_job_id": "999999999999.1"},
                 "async_result_failure_policy": policy,
             },
-            0 if collect else 2,
+            2,
             ("--limit", "demo1"),
         )
-        check_recaps(job, {"demo1"}, collect)
         check_artifact(job, {"demo1"} if collect else set())
+        cleanup = job.events("Collect | Remove the async job cache")
+        require(
+            len(cleanup) == 1
+            and cleanup[0]["status"] == "failed"
+            and "could not find job" in cleanup[0]["result"].get("msg", ""),
+            "Missing-cache cleanup did not report its module failure",
+        )
         check_cleanup(job)
 
     for policy in ("fail_host", "collect_and_exclude"):
@@ -324,7 +373,7 @@ def check_role_edges(base: Path) -> None:
             f"poll-exhaustion-{policy}",
             "playbooks/demonstrate-role.yml",
             {
-                "async_timeouts_command_delay": 15,
+                "async_timeouts_command_delay": 8,
                 "async_timeouts_command_exit_code": 0,
                 "async_timeouts_execution_timeout": 30,
                 "async_timeouts_poll_retries": 1,
@@ -340,14 +389,8 @@ def check_role_edges(base: Path) -> None:
             job.events("Collect | Explain an unfinished job"),
             "Unfinished-job warning absent",
         )
-        launch = job.events("Launch the delayed operation")[0]["result"]
-        require(Path(launch["results_file"]).is_file(), "Running-job cache was deleted")
-        pid = int((job.work / "pids" / "demo1.pid").read_text(encoding="utf-8"))
-        require(
-            process_running(pid), "The exhaustion scenario did not leave work running"
-        )
-        drain_jobs(job)
-        check_cleanup(job)
+        check_explicit_cleanup(job, "Collect | Remove the async job cache")
+        finish_underpolled_job(job)
 
 
 def check_examples(base: Path) -> None:
@@ -376,15 +419,40 @@ def check_examples(base: Path) -> None:
         )
         if mode == "separate":
             check_continuation(
-                job, "Show that execution continues before the operation finishes", HOSTS
+                job,
+                "Show that execution continues before the operation finishes",
+                HOSTS,
             )
         launch_task = (
             "Launch and wait at the same task"
             if mode == "positive"
             else "Launch the delayed operation"
         )
-        drain_jobs(job, launch_task)
-        check_cleanup(job)
+        if mode == "positive":
+            drain_jobs(job, launch_task)
+            check_cleanup(job)
+        else:
+            check_explicit_cleanup(job, "Remove the async job cache")
+            check_cleanup(job)
+
+    job = run_job(
+        base,
+        "native-separate-poll-exhaustion",
+        "playbooks/demonstrate-separate-poll.yml",
+        {
+            "async_timeouts_command_delay": 8,
+            "async_timeouts_command_exit_code": 0,
+            "async_timeouts_execution_timeout": 10,
+            "async_timeouts_poll_retries": 1,
+        },
+        expected_rc=2,
+        flags=("--limit", "demo1"),
+    )
+    check_continuation(
+        job, "Show that only successful hosts continue after collection", set()
+    )
+    check_explicit_cleanup(job, "Remove the async job cache")
+    finish_underpolled_job(job)
 
     check_uri_example(base)
 

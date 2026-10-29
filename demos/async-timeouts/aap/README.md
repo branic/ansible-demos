@@ -84,8 +84,8 @@ child template. Use the same inventory and project revision for both nodes.
   cause unhandled failures.
 - **URI endpoint fails:** check HTTPS access to `httpbin.org` from the EE and
   confirm `async_timeouts_http_url` points to `/delay/3`.
-- **Polling exhausted:** the operation can still be running. Inspect the async
-  result in the same execution context before attempting cache cleanup.
+- **Polling exhausted:** increase the polling budget to cover the async limit.
+  Cache cleanup does not wait for or cancel an unfinished operation.
 
 Remove both workflows, six job templates, and dedicated inventory/source after use.
 Retain shared projects and EEs. See the [demo cleanup notes](../README.md#cleanup-and-limitations)

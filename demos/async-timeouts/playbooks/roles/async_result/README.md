@@ -1,9 +1,8 @@
 # Collect one asynchronous result
 
 Collect an Ansible async job on the current host and apply a failure policy.
-The caller launches the operation with `poll: 0`; the role collects its status
-and handles failures. Retained caches are left to ephemeral
-EE teardown or caller-managed cleanup in persistent environments.
+The caller launches the operation with `poll: 0`; the role collects its status,
+removes its job cache, and handles failures.
 
 The role is local to this demo. For broader result and error handling, see
 [collect_async_status](https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/collect_async_status).
@@ -67,12 +66,11 @@ is not yet satisfied.
   leave an unhandled failure or require `clear_host_errors`. Ending the host
   applies to the current play. Later jobs must explicitly exclude recorded hosts.
 
-The role retains job caches. For cleanup, see the
-[demo README](../../../README.md#cleanup-and-limitations).
-
-If retries run out while the job is unfinished, the operation may keep running
-until completion or its launch-time `async` limit. Neither `end_host` nor cache
-cleanup cancels an operation. Never remove an active job's cache to cancel it.
+An `always` task removes the cache with `async_status`, `mode: cleanup`,
+including after an explicit host failure. Host exclusion runs after cleanup;
+cleanup errors fail the host.
+Set the polling budget to cover the async limit and wrapper overhead. Cleanup
+does not wait for or cancel an unfinished operation.
 
 ## Limitations
 

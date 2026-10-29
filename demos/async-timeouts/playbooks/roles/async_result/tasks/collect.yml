@@ -22,7 +22,7 @@
           host: "{{ inventory_hostname }}"
           job_id: "{{ async_result_job.ansible_job_id }}"
           finished: "{{ __async_result_result.finished | default(false) | bool }}"
-          message: "{{ __async_result_result.msg | default('No terminal result collected') }}"
+          message: "{{ ansible_failed_result.msg | default('No terminal result collected') }}"
           return_code: "{{ __async_result_result.rc | default('unavailable') }}"
           stderr: "{{ __async_result_result.stderr | default('') }}"
         verbosity: 0
@@ -30,8 +30,8 @@
     - name: Collect | Explain an unfinished job
       ansible.builtin.debug:
         msg: >-
-          Status polling ended before a terminal result was observed. The operation
-          may still be running up to its async execution limit; its cache is retained.
+          Status polling ended before the operation finished. Removing its cache
+          does not cancel it.
         verbosity: 0
       when: __async_result_result is not finished
 
@@ -52,5 +52,15 @@
         per_host: false
         aggregate: true
 
-    - name: Collect | End this host after recording it
-      ansible.builtin.meta: end_host
+  always:
+    - name: Collect | Remove the async job cache
+      ansible.builtin.async_status:
+        jid: "{{ async_result_job.ansible_job_id }}"
+        mode: cleanup
+      changed_when: true
+
+- name: Collect | End this host after recording it
+  ansible.builtin.meta: end_host
+  when:
+    - async_result_failure_policy == 'collect_and_exclude'
+    - __async_result_result is failed

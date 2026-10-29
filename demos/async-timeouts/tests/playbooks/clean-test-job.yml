@@ -20,7 +20,7 @@
           retries: "{{ async_timeouts_cleanup_retries | default(40) }}"
           delay: 1
           changed_when: false
-          failed_when: false
+          failed_when: __async_timeouts_cleanup_result is not finished
 
         - name: Clean job | Remove the terminal job cache
           ansible.builtin.async_status:
