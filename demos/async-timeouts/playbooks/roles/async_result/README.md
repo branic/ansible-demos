@@ -2,7 +2,8 @@
 
 Collect one already-launched Ansible async job on the current host and apply a
 failure policy. The caller launches the operation with `poll: 0`; this role owns
-status collection, terminal cache cleanup, and error processing.
+status collection and error processing. Retained caches are left to ephemeral
+EE teardown or caller-managed cleanup in persistent environments.
 
 This is an intentionally small teaching role, local to this demo. It is not a
 published collection or a replacement for
@@ -20,10 +21,11 @@ published collection or a replacement for
 
 Argument specifications validate the interface; assertions validate positive
 polling bounds and the job ID. Configurable defaults live in `defaults/main.yml`.
-Do not set internal `__async_result_` variables. They are reset on each invocation
-and are not private in Ansible's variable model. In fail-host mode, collection
-output remains available through host variables after the failure. In collection
-mode, an unsuccessful host ends this play before subsequent caller tasks run.
+Do not set the internal `__async_result_result` variable. Each collection
+registers a fresh result; it is not private in Ansible's variable model. In
+fail-host mode, collection output remains available through host variables after
+the failure. In collection mode, an unsuccessful host ends this play before
+subsequent caller tasks run.
 
 No secrets are accepted by this demo. Diagnostics deliberately expose command
 results; add an appropriate logging policy before adapting it to sensitive work.
@@ -54,11 +56,12 @@ role. Keep the default linear strategy, with no `serial` or job slicing.
 Status polling runs inside `block`/`rescue`. A completed nonzero exit, execution
 timeout, missing job cache, or polling exhaustion enters rescue. The captured
 result retains `msg`, `rc`, and `stderr` when available; a timeout need not have
-an exit code. The summary is visible at verbosity 0, and the complete result at
-verbosity 1. Ordinary `FAILED - RETRYING` messages can appear while a successful
-operation is still running: they mean the `until` condition is not yet satisfied.
+an exit code. Failure details are visible at verbosity 0; successful results
+are available at verbosity 1. Ordinary `FAILED - RETRYING` messages can appear
+while a successful operation is still running: they mean the `until` condition
+is not yet satisfied.
 
-- **`fail_host`:** Fail the affected host after diagnostics and terminal cleanup.
+- **`fail_host`:** Fail the affected host after diagnostics.
   Other hosts can continue; any unhandled failure makes the job Failed. The
   rescued poll and deliberate final failure both appear in the recap.
 - **`collect_and_exclude`:** Append the inventory hostname to the global artifact,
@@ -66,27 +69,28 @@ operation is still running: they mean the `until` condition is not yet satisfied
   leave an unhandled failure or require `clear_host_errors`. Ending the host
   applies to the current play. Later jobs must explicitly exclude recorded hosts.
 
-Terminal caches are removed only after a terminal result has been observed and
-the cache file exists. A missing cache is itself a collection failure and needs
-no removal. If retries run out while the job is unfinished, the cache is retained
-and the operation may keep running until completion or its launch-time `async`
-limit. Neither `end_host` nor cache cleanup cancels an operation.
+The role leaves job caches in place, including completed results. Ephemeral EE
+teardown discards them. For persistent CLI environments, wait for a terminal
+result and call `ansible.builtin.async_status` with the job's `jid` and
+`mode: cleanup`, using the same execution context and async directory. The CLI
+harness handles this outside the role.
 
-Cleanup failures remain ordinary unhandled failures: do not claim successful
-collection if required filesystem cleanup itself fails.
+If retries run out while the job is unfinished, the operation may keep running
+until completion or its launch-time `async` limit. Neither `end_host` nor cache
+cleanup cancels an operation. Never remove an active job's cache to cancel it.
 
 ## Supported execution and limitations
 
-The demo uses POSIX local aliases, Python 3, and only `ansible.builtin`. CLI and
-AAP 2.7 validation passed; exact versions are recorded in the
-[demo README](../../../README.md). Controller tests used ansible-core 2.16.19
-and Python 3.12.15 in the supported RHEL 9 EE.
+The demo uses POSIX local aliases, Python 3, and only `ansible.builtin`. Exact
+tested versions are recorded in the [demo README](../../../README.md).
+Controller tests of the earlier role used ansible-core 2.16.19 and Python 3.12.15
+in the supported RHEL 9 EE. The simplified role has not yet been revalidated in AAP.
 
-The role validates supplied arguments in check mode but skips collection and
-failure-policy execution. Caller examples skip background launches in check mode.
-Status reads report unchanged; deleting an existing terminal cache reports changed.
-Repeated invocations with new launches are supported. Reusing a cleaned job ID
-fails because its result no longer exists; collection is intentionally consumptive.
+The role leaves check-mode handling to its caller. The demo playbook and
+verification fixture skip background launches and role invocation in check mode.
+Status reads report unchanged. Repeated invocations with new launches are
+supported. A completed result remains readable until its cache is cleaned;
+reusing a cleaned job ID fails because its result no longer exists.
 
 Only one job per host per invocation is supported. The caller handles failed
 launches before invoking the role. Unreachable hosts and invalid task definitions

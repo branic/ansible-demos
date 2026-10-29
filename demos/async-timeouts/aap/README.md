@@ -49,7 +49,7 @@ SCM or image registries may require their own credentials.
 | `demo_verify_async_survivors` | `demos/async-timeouts/playbooks/verify-survivors.yml` | `{}` |
 
 Disable arbitrary launch-time prompts for the presentation. Default verbosity is
-sufficient for the summaries; verbosity 1 adds the complete role result. The
+sufficient for failure details; verbosity 1 adds successful role results. The
 native examples and fail-host template intentionally finish Failed.
 
 ## Workflow
@@ -179,12 +179,16 @@ Both native async lessons now leave retained job caches to ephemeral EE teardown
 The separate-poll lesson also shows the launch directly in the playbook. These
 changes have passed CLI checks; AAP has not yet been revalidated.
 
+The role example now also shows the launch directly and leaves job caches to EE
+teardown. Its role handles diagnostics and the selected policy within `rescue`,
+without a separate failure flag. These changes have not yet been revalidated in AAP.
+
 ## Troubleshooting and cleanup
 
 - **Artifact missing or wrong:** check source synchronization, policy values,
   global `per_host: false` stats, and absence of manually defined output values.
 - **Child does not run:** inspect the collection job's final status and the
-  Success link. Unreachable hosts, failed launches, and cleanup errors can still
+  Success link. Unreachable hosts and failed launches can still
   cause unhandled failures.
 - **Python or script missing:** confirm the repository revision and EE image.
   These scripts intentionally run locally from the checked-out project.

@@ -169,6 +169,22 @@ def check_cleanup(job: Job) -> None:
     )
 
 
+def drain_jobs(job: Job, launch_task: str = "Launch the delayed operation") -> None:
+    """Finish retained jobs and remove caches in each launching host's context."""
+    for event in job.events(launch_task):
+        result = event["result"]
+        launch = result.get("async_result", result)
+        if launch.get("results_file") and Path(launch["results_file"]).exists():
+            run_job(
+                job.work.parent,
+                f"drain-{job.work.name}-{event['host']}",
+                "tests/playbooks/clean-test-job.yml",
+                {"async_timeouts_cleanup_job": launch},
+                flags=("--limit", event["host"]),
+                reuse=job,
+            )
+
+
 def check_mixed(base: Path, policy: str, label: str) -> None:
     """Check all three outcomes and optionally execute real artifact handoff."""
     collect = policy == "collect_and_exclude"
@@ -182,11 +198,16 @@ def check_mixed(base: Path, policy: str, label: str) -> None:
     check_continuation(job, "Continue on hosts whose operation succeeded", {"demo1"})
     check_recaps(job, {"demo2", "demo3"}, collect)
     check_artifact(job, {"demo2", "demo3"} if collect else set())
+    collected = {
+        event["host"]: event["result"]
+        for event in job.events("Collect | Wait for a terminal job result")
+    }
+    require(collected["demo1"]["rc"] == 0, "Success result lost")
     summaries = {
         event["host"]: event["result"]["msg"]
-        for event in job.events("Collect | Display the result summary")
+        for event in job.events("Collect | Display failure details")
     }
-    require(summaries["demo1"]["return_code"] == 0, "Success result lost")
+    require(set(summaries) == {"demo2", "demo3"}, "Failure diagnostics differ")
     require(
         summaries["demo2"]["finished"] and "Timeout" in summaries["demo2"]["message"],
         "Execution timeout lost",
@@ -196,14 +217,13 @@ def check_mixed(base: Path, policy: str, label: str) -> None:
         and "Intentional operation error" in summaries["demo3"]["stderr"],
         "Operation failure diagnostics lost",
     )
-    launched = job.events(
-        "Launch operation | Start the standalone command in the background"
-    )
+    launched = job.events("Launch the delayed operation")
     require(len(launched) == 3, "Not all hosts launched their commands")
     require(
         len(list((job.work / "pids").glob("*.pid"))) == 3,
         "Standalone commands did not publish termination-check markers",
     )
+    drain_jobs(job)
     check_cleanup(job)
     if collect:
         downstream = run_job(
@@ -240,6 +260,7 @@ def check_controls(base: Path) -> None:
             check_continuation(
                 job, "Continue on hosts whose operation succeeded", HOSTS - failed
             )
+            drain_jobs(job)
             check_cleanup(job)
             if collect:
                 downstream = run_job(
@@ -321,22 +342,13 @@ def check_role_edges(base: Path) -> None:
             job.events("Collect | Explain an unfinished job"),
             "Unfinished-job warning absent",
         )
-        launch = job.events(
-            "Launch operation | Start the standalone command in the background"
-        )[0]["result"]
+        launch = job.events("Launch the delayed operation")[0]["result"]
         require(Path(launch["results_file"]).is_file(), "Running-job cache was deleted")
         pid = int((job.work / "pids" / "demo1.pid").read_text(encoding="utf-8"))
         require(
             process_running(pid), "The exhaustion scenario did not leave work running"
         )
-        run_job(
-            base,
-            f"drain-{policy}",
-            "tests/playbooks/clean-test-job.yml",
-            {"async_timeouts_cleanup_job": launch},
-            flags=("--limit", "demo1"),
-            reuse=job,
-        )
+        drain_jobs(job)
         check_cleanup(job)
 
 
@@ -368,25 +380,12 @@ def check_examples(base: Path) -> None:
             check_continuation(
                 job, "Show that execution continues before the operation finishes", HOSTS
             )
-        # Both lessons leave retained caches to EE teardown. Drain them here
-        # using the launching host's context so CLI verification cleans up.
         launch_task = (
             "Launch and wait at the same task"
             if mode == "positive"
             else "Launch the delayed operation"
         )
-        for event in job.events(launch_task):
-            result = event["result"]
-            launch = result.get("async_result", result)
-            if launch.get("results_file") and Path(launch["results_file"]).exists():
-                run_job(
-                    base,
-                    f"drain-{mode}-{event['host']}",
-                    "tests/playbooks/clean-test-job.yml",
-                    {"async_timeouts_cleanup_job": launch},
-                    flags=("--limit", event["host"]),
-                    reuse=job,
-                )
+        drain_jobs(job, launch_task)
         check_cleanup(job)
 
     check_uri_example(base)

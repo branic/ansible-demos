@@ -212,9 +212,9 @@ a particular Ansible version formats debug output.
 
 Positive polling normally removes completed job caches automatically, but it can
 stop waiting before the async wrapper publishes its timeout. Separate polling
-with `poll: 0` retains job caches even after explicit status collection. Both
-native async lessons leave retained caches to ephemeral EE teardown. For CLI runs,
-inspect the job result after it finishes and remove a retained cache with
+with `poll: 0` retains job caches even after explicit status collection. All async
+lessons, including the role, leave retained caches to ephemeral EE teardown. For
+CLI runs, inspect the job result after it finishes and remove a retained cache with
 `ansible.builtin.async_status`, using its `jid` and `mode: cleanup` in the same
 connection context and async directory. The CLI harness drains retained jobs and
 removes their caches outside the teaching playbooks.
@@ -225,11 +225,9 @@ cleans up its own temporary HTTP process and files. Cleanup polling deliberately
 accepts the command's failure result so the original teaching failure remains the
 reported failure.
 
-The role retains unfinished-job caches when polling is exhausted. The operation
-can continue until its async limit. To clean one after it finishes, call
-`ansible.builtin.async_status` with that job's `jid` and `mode: cleanup`, using the
-same connection context and async directory. Never delete an active job's cache
-as a way of cancelling it. The harness explicitly drains its exhaustion tests.
+If role polling is exhausted before completion, the operation can continue until
+its async limit. Never delete an active job's cache as a way of cancelling it.
+The harness explicitly drains its exhaustion tests before removing their caches.
 
 Cancelling an AAP job or killing a CLI process can bypass async cleanup. Commands
 are bounded by their async limits; inspect retained job results
@@ -243,7 +241,6 @@ finished. Remove a project or EE registration only if dedicated to this demo.
 
 Keep one job slice, the default linear strategy, no `serial`, no privilege
 escalation, and blank limits/tags for the presentation. Unreachable hosts and
-invalid task definitions do not enter rescue. Launch failures and cleanup
-failures can still fail a job normally. The demo does not promise cancellation,
-recovery across disconnected jobs, parallel artifact merging, or fleet-scale
-performance from three local aliases.
+invalid task definitions do not enter rescue. Launch failures can still fail a
+job normally. The demo does not promise cancellation, recovery across disconnected
+jobs, parallel artifact merging, or fleet-scale performance from three local aliases.

@@ -15,6 +15,7 @@
     - name: Invoke the role with verification inputs
       ansible.builtin.include_role:
         name: async_result
+      when: not ansible_check_mode
 
     - name: Report successful standalone collection
       ansible.builtin.debug:

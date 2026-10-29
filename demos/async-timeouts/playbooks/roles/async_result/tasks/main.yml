@@ -10,6 +10,5 @@
     quiet: true
     fail_msg: Supply a nonempty job ID and positive polling retries and delay.
 
-- name: Collect the launched job outside check mode
+- name: Collect the launched job
   ansible.builtin.include_tasks: collect.yml
-  when: not ansible_check_mode
