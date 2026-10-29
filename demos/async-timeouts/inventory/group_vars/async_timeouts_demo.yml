@@ -1,0 +1,8 @@
+---
+ansible_connection: local
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
+async_timeouts_http_url: https://httpbin.org/delay/3
+async_timeouts_execution_timeout: 10
+async_timeouts_poll_interval: 1
+async_timeouts_poll_retries: 40
+async_timeouts_failure_policy: fail_host

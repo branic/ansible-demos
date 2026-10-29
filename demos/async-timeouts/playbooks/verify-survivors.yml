@@ -1,0 +1,17 @@
+---
+- name: Verify hosts that succeeded in the upstream job
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Exclude hosts recorded by the upstream job
+      when: >-
+        inventory_hostname in (__async_timeouts_failed_hosts | default([]))
+      ansible.builtin.meta: end_host
+
+    - name: Check connectivity on surviving hosts
+      ansible.builtin.ping:
+
+    - name: Show which hosts performed the downstream action
+      ansible.builtin.debug:
+        msg: "DOWNSTREAM verified {{ inventory_hostname }}"
+        verbosity: 0

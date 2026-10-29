@@ -1,0 +1,66 @@
+---
+- name: Collect | Poll the asynchronous job
+  block:
+    - name: Collect | Wait for a terminal job result
+      ansible.builtin.async_status:
+        jid: "{{ async_result_job.ansible_job_id }}"
+      register: __async_result_result
+      until: __async_result_result is finished
+      retries: "{{ async_result_retries }}"
+      delay: "{{ async_result_delay }}"
+      changed_when: false
+
+    - name: Collect | Display the complete result for troubleshooting
+      ansible.builtin.debug:
+        var: __async_result_result
+        verbosity: 1
+
+  rescue:
+    - name: Collect | Display failure details
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          job_id: "{{ async_result_job.ansible_job_id }}"
+          finished: "{{ __async_result_result.finished | default(false) | bool }}"
+          message: "{{ ansible_failed_result.msg | default('No terminal result collected') }}"
+          return_code: "{{ __async_result_result.rc | default('unavailable') }}"
+          stderr: "{{ __async_result_result.stderr | default('') }}"
+        verbosity: 0
+
+    - name: Collect | Explain an unfinished job
+      when: __async_result_result is not finished
+      ansible.builtin.debug:
+        msg: >-
+          Status polling ended before the operation finished. Removing its cache
+          does not cancel it.
+        verbosity: 0
+
+    - name: Collect | Fail only the affected host
+      when: async_result_failure_policy == 'fail_host'
+      ansible.builtin.fail:
+        msg: >-
+          Async operation unsuccessful on {{ inventory_hostname }}:
+          {{ __async_result_result.msg | default('No terminal result collected') }};
+          rc={{ __async_result_result.rc | default('unavailable') }};
+          stderr={{ __async_result_result.stderr | default('') }}
+
+    - name: Collect | Record the unsuccessful host for downstream exclusion
+      ansible.builtin.set_stats:
+        data:
+          __async_timeouts_failed_hosts:
+            - "{{ inventory_hostname }}"
+        per_host: false
+        aggregate: true
+
+  always:
+    - name: Collect | Remove the async job cache
+      ansible.builtin.async_status:
+        jid: "{{ async_result_job.ansible_job_id }}"
+        mode: cleanup
+      changed_when: true
+
+- name: Collect | End this host after recording it
+  when:
+    - async_result_failure_policy == 'collect_and_exclude'
+    - __async_result_result is failed
+  ansible.builtin.meta: end_host

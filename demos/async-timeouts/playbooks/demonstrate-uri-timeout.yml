@@ -1,0 +1,21 @@
+---
+- name: Demonstrate a module-specific socket timeout
+  hosts: demo1
+  gather_facts: false
+  tasks:
+    - name: Demonstrate a socket timeout shorter than the server delay
+      block:
+        - name: Request a three-second response with a one-second socket timeout
+          ansible.builtin.uri:
+            url: "{{ async_timeouts_http_url }}"
+            timeout: 1
+
+      rescue:
+        - name: Show why the short request failed
+          ansible.builtin.debug:
+            msg: "{{ ansible_failed_result.msg }}"
+
+    - name: Request the same response with a sufficient socket timeout
+      ansible.builtin.uri:
+        url: "{{ async_timeouts_http_url }}"
+        timeout: 6

@@ -1,0 +1,29 @@
+---
+- name: Finish an intentionally under-polled verification job
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Clean job | Check whether this job still has a cache
+      when: async_timeouts_cleanup_job.results_file is defined
+      ansible.builtin.stat:
+        path: "{{ async_timeouts_cleanup_job.results_file }}"
+      register: __async_timeouts_cache
+
+    - name: Clean job | Finish collecting before removing the cache
+      when: (__async_timeouts_cache.stat | default({})).exists | default(false)
+      block:
+        - name: Clean job | Wait for the wrapper to finish
+          ansible.builtin.async_status:
+            jid: "{{ async_timeouts_cleanup_job.ansible_job_id }}"
+          register: __async_timeouts_cleanup_result
+          until: __async_timeouts_cleanup_result is finished
+          retries: "{{ async_timeouts_cleanup_retries | default(40) }}"
+          delay: 1
+          changed_when: false
+          failed_when: __async_timeouts_cleanup_result is not finished
+
+        - name: Clean job | Remove the terminal job cache
+          ansible.builtin.async_status:
+            jid: "{{ async_timeouts_cleanup_job.ansible_job_id }}"
+            mode: cleanup
+          changed_when: true

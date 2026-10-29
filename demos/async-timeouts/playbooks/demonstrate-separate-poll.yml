@@ -1,0 +1,49 @@
+---
+- name: Demonstrate background launch followed by explicit status polling
+  hosts: async_timeouts_demo
+  gather_facts: false
+  tasks:
+    - name: Launch, collect, and clean up the asynchronous operation
+      block:
+        - name: Launch the delayed operation
+          ansible.builtin.command:
+            argv:
+              - "{{ ansible_playbook_python }}"
+              - "{{ playbook_dir }}/../files/delayed_operation.py"
+              - --delay
+              - "{{ async_timeouts_command_delay | string }}"
+              - --exit-code
+              - "{{ async_timeouts_command_exit_code | string }}"
+              - --host
+              - "{{ inventory_hostname }}"
+          environment:
+            ASYNC_TIMEOUTS_PID_DIRECTORY: "{{ async_timeouts_pid_directory | default('') }}"
+          async: "{{ async_timeouts_execution_timeout }}"
+          poll: 0
+          register: __async_timeouts_launch
+          changed_when: false
+
+        - name: Show that execution continues before the operation finishes
+          ansible.builtin.debug:
+            msg: "BEFORE COLLECTION on {{ inventory_hostname }}"
+            verbosity: 0
+
+        - name: Collect the asynchronous result explicitly
+          ansible.builtin.async_status:
+            jid: "{{ __async_timeouts_launch.ansible_job_id }}"
+          register: __async_timeouts_inline_result
+          until: __async_timeouts_inline_result is finished
+          retries: "{{ async_timeouts_poll_retries }}"
+          delay: "{{ async_timeouts_poll_interval }}"
+          changed_when: false
+
+      always:
+        - name: Remove the async job cache
+          ansible.builtin.async_status:
+            jid: "{{ __async_timeouts_launch.ansible_job_id }}"
+            mode: cleanup
+
+    - name: Show that only successful hosts continue after collection
+      ansible.builtin.debug:
+        msg: "SEPARATE POLL continued on {{ inventory_hostname }}"
+        verbosity: 0

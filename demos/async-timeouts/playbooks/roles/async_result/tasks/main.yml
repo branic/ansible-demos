@@ -1,0 +1,14 @@
+---
+- name: Validate polling bounds
+  ansible.builtin.assert:
+    that:
+      - async_result_retries | int > 0
+      - async_result_delay | int > 0
+      - async_result_job.ansible_job_id is defined
+      - async_result_job.ansible_job_id is string
+      - async_result_job.ansible_job_id | default('') | length > 0
+    quiet: true
+    fail_msg: Supply a nonempty job ID and positive polling retries and delay.
+
+- name: Collect the launched job
+  ansible.builtin.include_tasks: collect.yml

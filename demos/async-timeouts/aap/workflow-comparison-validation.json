@@ -1,0 +1,82 @@
+{
+  "base_url": "https://basic-aap-aap-demo.apps-crc.testing",
+  "workflow_template_id": 27,
+  "name": "demo_workflow_async_fail_host",
+  "source_workflow_template_id": 15,
+  "inventory": 2,
+  "nodes": [
+    {
+      "id": 5,
+      "identifier": "collect",
+      "unified_job_template": 12,
+      "success_nodes": [
+        6
+      ],
+      "failure_nodes": [],
+      "always_nodes": []
+    },
+    {
+      "id": 6,
+      "identifier": "verify",
+      "unified_job_template": 14,
+      "success_nodes": [],
+      "failure_nodes": [],
+      "always_nodes": []
+    }
+  ],
+  "validation_workflow_job_id": 65,
+  "validation": {
+    "workflow_job_id": 65,
+    "workflow_status": "failed",
+    "root_job_id": 66,
+    "root_status": "failed",
+    "scm_revision": "b5d1e5d87b0a5fedbb6598f29d05bb4c1dd294f7",
+    "verification_job_launched": false,
+    "verification_node_do_not_run": true,
+    "continuation_hosts": [
+      "demo1"
+    ],
+    "recap": {
+      "ok": {
+        "demo1": 9,
+        "demo2": 7,
+        "demo3": 7
+      },
+      "changed": {},
+      "failures": {
+        "demo2": 1,
+        "demo3": 1
+      },
+      "rescued": {
+        "demo3": 1,
+        "demo2": 1
+      },
+      "ignored": {},
+      "dark": {},
+      "skipped": {
+        "demo1": 1,
+        "demo2": 1,
+        "demo3": 1
+      }
+    },
+    "root_artifacts": {
+      "__async_timeouts_failed_hosts": []
+    }
+  },
+  "existing_collection_workflow_reference": {
+    "workflow_job_id": 62,
+    "workflow_status": "successful",
+    "collection_job_id": 63,
+    "verification_job_id": 64,
+    "scm_revision": "b5d1e5d87b0a5fedbb6598f29d05bb4c1dd294f7",
+    "excluded_hosts": [
+      "demo2",
+      "demo3"
+    ],
+    "verification_hosts": [
+      "demo1"
+    ],
+    "note": "Existing completed run inspected for comparison; not relaunched or modified."
+  },
+  "validated_on": "2026-10-29"
+}

@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: async_result
+  author: Brant Evans
+  description: Collect one asynchronous result and apply a host failure policy.
+  license: Not specified
+  min_ansible_version: "2.16"
+
+dependencies: []
