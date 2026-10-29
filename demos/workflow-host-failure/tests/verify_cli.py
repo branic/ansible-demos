@@ -105,7 +105,7 @@ def main():
             check_messages(output, prefix, set(ALL_HOSTS))
             check_rescues(stats, set())
             print(f"PASS: standalone {job} defaults to no failed hosts")
-    print("All CLI checks passed. AAP routing still requires controller validation.")
+    print("All CLI checks passed.")
 
 
 if __name__ == "__main__":

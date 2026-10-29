@@ -1,7 +1,7 @@
 # Configure the host failure workflow in AAP 2.6+
 
-These are manual setup instructions. Controller execution is pending lab
-validation; record your AAP version and tested EE image digest after verification.
+Configure the project, inventory, execution environment, job templates, and
+workflow manually as described below.
 
 ## Project, inventory, and execution environment
 
@@ -12,9 +12,8 @@ validation; record your AAP version and tested EE image digest after verificatio
    `demos/workflow-host-failure/inventory/demo.yml`, then synchronize it.
 3. Verify `workflow_demo` contains `demo1`, `demo2`, and `demo3` with the source's
    local connection and Python interpreter variables.
-4. Select an AAP 2.6-compatible EE with Python 3 and ansible-core for all three
-   jobs. No extra collections are needed. Record its registry path, tag, and
-   digest; supply a registry credential if required.
+4. Select an AAP 2.6-compatible EE with ansible-core 2.16+ for all three jobs.
+   No extra collections are needed. Supply a registry credential if required.
 
 ## Job templates
 

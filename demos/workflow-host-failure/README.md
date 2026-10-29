@@ -4,20 +4,18 @@ Demonstrate a task failure on `demo2`, rescue it, and continue the same playbook
 on `demo1` and `demo3`. Two subsequent job templates skip the failed host using
 one shared `__workflow_host_failure_failed_hosts` artifact.
 
-## Execution modes and validation
+## Execution modes and requirements
 
-This is an **AAP 2.6+ workflow demo**, with CLI verification of the playbooks and
-artifact handoff. Controller execution and the chosen execution environment still
-need validation in your lab. CLI tests do not validate controller routing.
+Run the complete workflow in **AAP 2.6+**. Use the CLI to run individual playbooks
+or demonstrate artifact handoff between separate processes.
 
-| Component | Requirement / validation |
+| Component | Requirement |
 | --- | --- |
-| AAP | 2.6 or later; controller validation pending |
-| ansible-core | CLI tested with 2.20.7 |
-| ansible-lint | 26.6.0, production profile, strict |
-| Collections | Only `ansible.builtin`; no Galaxy installation needed |
-| Targets | Three local inventory aliases; no external machines needed |
-| Execution environment | AAP 2.6-compatible EE with Python 3 and ansible-core; record your tested image tag/digest |
+| AAP | 2.6 or later |
+| ansible-core | 2.16+ for CLI and EE use |
+| Collections | **None** |
+| Targets | `workflow_demo`: `demo1`, `demo2`, `demo3` |
+| Execution environment | AAP 2.6-compatible EE with ansible-core 2.16+ |
 
 Run commands from the repository root. You need AAP permissions to create and
 run a project, inventory, three job templates, and a workflow. The supplied local
@@ -56,7 +54,8 @@ AAP passes global `set_stats` artifacts to downstream jobs as extra variables;
 keep `per_host: false`. See the
 [AAP 2.6 workflow documentation](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/develop-assembly_ug_controller_workflows).
 A successfully rescued task failure allows the job to succeed, so this workflow
-uses **Success** links. `clear_host_errors` is unnecessary. See
+uses **Success** links. The rescue tasks also clear host errors before recording
+the failed host and ending its play. See
 [Ansible block error handling](https://docs.ansible.com/projects/ansible-core/devel/playbook_guide/playbooks_blocks.html).
 
 ## Inputs
@@ -118,17 +117,9 @@ python3 demos/workflow-host-failure/tests/verify_cli.py
 ansible-lint --offline --config-file .ansible-lint demos/workflow-host-failure
 ```
 
-It checks single and multiple failures, no failures, additional stage 2 failures,
-all hosts failing, cumulative artifacts, rescued counts, and completion messages.
-It also verifies that standalone downstream jobs default to no failed hosts.
-
-When editing the test callback, select the Python environment prepared in the
-[contribution instructions](../../CONTRIBUTING.md#validate-and-publish) in your
-IDE. Pylance and Pylint need access to `ansible-core` to resolve its callback base
-class. Install Pylint in that same environment and invoke it with
-`python -m pylint demos/workflow-host-failure/tests/callback_plugins/capture_workflow.py`.
-An isolated Pylint installation without Ansible can also report a misleading
-"too few public methods" warning because it cannot inspect inherited methods.
+Expect each harness scenario to print `PASS`, followed by `All CLI checks passed.`
+Follow the [contribution instructions](../../CONTRIBUTING.md#validate-and-publish)
+to prepare the lint environment.
 
 ## Expected results
 
