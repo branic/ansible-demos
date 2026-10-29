@@ -33,7 +33,7 @@
           Status polling ended before a terminal result was observed. The operation
           may still be running up to its async execution limit; its cache is retained.
         verbosity: 0
-      when: not (__async_result_result.finished | default(false) | bool)
+      when: __async_result_result is not finished
 
     - name: Collect | Fail only the affected host
       ansible.builtin.fail:
