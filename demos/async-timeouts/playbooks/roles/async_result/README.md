@@ -1,12 +1,11 @@
 # Collect one asynchronous result
 
-Collect one already-launched Ansible async job on the current host and apply a
-failure policy. The caller launches the operation with `poll: 0`; this role owns
-status collection and error processing. Retained caches are left to ephemeral
+Collect an Ansible async job on the current host and apply a failure policy.
+The caller launches the operation with `poll: 0`; the role collects its status
+and handles failures. Retained caches are left to ephemeral
 EE teardown or caller-managed cleanup in persistent environments.
 
-This is an intentionally small teaching role, local to this demo. It is not a
-published collection or a replacement for
+The role is local to this demo. For broader result and error handling, see
 [collect_async_status](https://github.com/redhat-cop/infra.aap_configuration/tree/devel/roles/collect_async_status).
 
 ## Inputs and output
@@ -21,14 +20,13 @@ published collection or a replacement for
 
 Argument specifications validate the interface; assertions validate positive
 polling bounds and the job ID. Configurable defaults live in `defaults/main.yml`.
-Do not set the internal `__async_result_result` variable. Each collection
-registers a fresh result; it is not private in Ansible's variable model. In
+Do not set `__async_result_result`; each collection registers a fresh result. In
 fail-host mode, collection output remains available through host variables after
 the failure. In collection mode, an unsuccessful host ends this play before
 subsequent caller tasks run.
 
-No secrets are accepted by this demo. Diagnostics deliberately expose command
-results; add an appropriate logging policy before adapting it to sensitive work.
+Diagnostics display command results. Review logging before adapting the role
+to operations that handle secrets.
 
 ## Usage
 
@@ -69,33 +67,18 @@ is not yet satisfied.
   leave an unhandled failure or require `clear_host_errors`. Ending the host
   applies to the current play. Later jobs must explicitly exclude recorded hosts.
 
-The role leaves job caches in place, including completed results. Ephemeral EE
-teardown discards them. For persistent CLI environments, wait for a terminal
-result and call `ansible.builtin.async_status` with the job's `jid` and
-`mode: cleanup`, using the same execution context and async directory. The CLI
-harness handles this outside the role.
+The role retains job caches. For cleanup, see the
+[demo README](../../../README.md#cleanup-and-limitations).
 
 If retries run out while the job is unfinished, the operation may keep running
 until completion or its launch-time `async` limit. Neither `end_host` nor cache
 cleanup cancels an operation. Never remove an active job's cache to cancel it.
 
-## Supported execution and limitations
+## Limitations
 
-The demo uses POSIX local aliases, Python 3, and only `ansible.builtin`. Exact
-tested versions are recorded in the [demo README](../../../README.md).
-Controller tests of the earlier role used ansible-core 2.16.19 and Python 3.12.15
-in the supported RHEL 9 EE. The simplified role's mixed-policy workflow outcomes
-were validated in AAP; see the
-[workflow comparison](../../../aap/README.md#fail-host-workflow-comparison).
-The full AAP acceptance matrix has not been repeated for this version.
-
-The role leaves check-mode handling to its caller. The demo playbook and
-verification fixture skip background launches and role invocation in check mode.
-Status reads report unchanged. Repeated invocations with new launches are
-supported. A completed result remains readable until its cache is cleaned;
-reusing a cleaned job ID fails because its result no longer exists.
+The caller must guard async launches and role invocation in check mode. Run
+`demonstrate-role.yml` in normal mode; it does not provide those guards.
 
 Only one job per host per invocation is supported. The caller handles failed
 launches before invoking the role. Unreachable hosts and invalid task definitions
-do not enter rescue. The role does not normalize provider-specific API results,
-cancel processes, merge parallel workflow artifacts, or recover infrastructure.
+do not enter rescue.

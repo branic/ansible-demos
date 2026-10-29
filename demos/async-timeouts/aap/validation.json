@@ -1,7 +1,7 @@
 {
   "validation_date": "2026-10-28",
   "controller_url": "https://basic-aap-aap-demo.apps-crc.testing",
-  "aap_version": "2.7.20261019",
+  "aap_version": "2.7",
   "automation_controller_version": "4.8.12",
   "repository": "https://github.com/branic/ansible-demos.git",
   "branch": "feature/async-timeouts-demo",
