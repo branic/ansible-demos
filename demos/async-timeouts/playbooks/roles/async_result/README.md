@@ -84,7 +84,10 @@ cleanup cancels an operation. Never remove an active job's cache to cancel it.
 The demo uses POSIX local aliases, Python 3, and only `ansible.builtin`. Exact
 tested versions are recorded in the [demo README](../../../README.md).
 Controller tests of the earlier role used ansible-core 2.16.19 and Python 3.12.15
-in the supported RHEL 9 EE. The simplified role has not yet been revalidated in AAP.
+in the supported RHEL 9 EE. The simplified role's mixed-policy workflow outcomes
+were validated in AAP; see the
+[workflow comparison](../../../aap/README.md#fail-host-workflow-comparison).
+The full AAP acceptance matrix has not been repeated for this version.
 
 The role leaves check-mode handling to its caller. The demo playbook and
 verification fixture skip background launches and role invocation in check mode.

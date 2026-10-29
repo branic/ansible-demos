@@ -156,10 +156,12 @@ For an all-success control, supply `-e async_timeouts_command_delay=0
 ## Run with AAP and present
 
 Follow [AAP configuration and validation](aap/README.md). The final comparison
-uses named templates with fixed policy values. The collection workflow has one
-Success-linked verification job. See the [presenter runbook](presenter.md) for
-the approximately 15-minute demonstration sequence within the 45-minute content
-target.
+uses two workflows with the same Success-linked verification job:
+`demo_workflow_async_fail_host` fails before verification can run, while
+`demo_workflow_async_collect_and_exclude` succeeds and verifies only demo1.
+Their start templates have fixed policy values. See the
+[presenter runbook](presenter.md) for the approximately 15-minute demonstration
+sequence within the 45-minute content target.
 
 Reference [workflow host failure](../workflow-host-failure/README.md) for the
 already-taught artifact and exclusion pattern. The more complete
@@ -236,7 +238,7 @@ before removing leftovers. Temporary files may remain after interruption.
 The HTTP service uses a small share of the existing OpenShift cluster's capacity;
 no VM or persistent storage is provisioned. Remove its dedicated demo project
 after presenting. In AAP,
-remove the demo workflow, six job templates, and dedicated inventory/source when
+remove both demo workflows, six job templates, and dedicated inventory/source when
 finished. Remove a project or EE registration only if dedicated to this demo.
 
 Keep one job slice, the default linear strategy, no `serial`, no privilege

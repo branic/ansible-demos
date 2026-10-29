@@ -16,7 +16,7 @@ full rehearsal against the presentation.
   check `/healthz`. AAP uses its ClusterIP URL; CLI requests use the Route URL.
   Keep service setup and cleanup outside the teaching sequence.
 - Open each playbook and the role's collection task file in an editor with
-  readable YAML. Open the named templates and workflow in AAP.
+  readable YAML. Open the named templates and both workflows in AAP.
 - Keep a completed validated run available for reference if AAP startup is slow.
   Clearly identify it as a previous run if shown.
 
@@ -28,7 +28,7 @@ full rehearsal against the presentation.
 | 2:00–4:00 | Run `demo_demonstrate_positive_poll` | `async` sets execution allowance; positive `poll` collects at the launch task; only demo1 continues |
 | 4:00–6:00 | Run `demo_demonstrate_separate_poll` | All hosts reach `BEFORE COLLECTION`; the registered job ID connects launch to explicit polling |
 | 6:00–8:00 | Show `demonstrate-role.yml` and `async_result/tasks/collect.yml` | The repeated polling and error processing now live behind one small role interface |
-| 8:00–10:30 | Run `demo_collect_async_fail_host` | demo1 succeeds; demo2 times out without a command rc; demo3 returns rc 7 and stderr; job Failed |
+| 8:00–10:30 | Run `demo_workflow_async_fail_host` | demo1 succeeds; demo2 times out; demo3 returns rc 7 and stderr; job and workflow Failed; Success-linked verification does not run |
 | 10:30–13:30 | Run `demo_workflow_async_collect_and_exclude` | Same outcomes; rescued failures; artifact with demo2/demo3; Successful jobs; downstream action only on demo1 |
 | 13:30–15:00 | Open reference role and recap observations | Refer to the earlier workflow pattern; point to `collect_async_status` for broader capabilities |
 

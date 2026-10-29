@@ -52,11 +52,22 @@ Disable arbitrary launch-time prompts for the presentation. Default verbosity is
 sufficient for failure details; verbosity 1 adds successful role results. The
 native examples and fail-host template intentionally finish Failed.
 
-## Workflow
+## Workflows
 
 Create `demo_workflow_async_collect_and_exclude` with no extra variables or
 survey. Add `demo_collect_async_exclude_hosts` as the start node and connect it
 to `demo_verify_async_survivors` with a **Success** link.
+
+Copy that workflow as `demo_workflow_async_fail_host`, replacing only its start
+node's job template with `demo_collect_async_fail_host`. Keep the same
+Success-linked verification node and workflow settings, with no extra variables
+or survey. With the default mixed inventory, the first job fails and the
+verification node does not run.
+
+| Workflow | Start job template | Default mixed outcome |
+| --- | --- | --- |
+| `demo_workflow_async_fail_host` | `demo_collect_async_fail_host` | Failed; verification does not run |
+| `demo_workflow_async_collect_and_exclude` | `demo_collect_async_exclude_hosts` | Successful; verification runs only on demo1 |
 
 Do not define `__async_timeouts_failed_hosts` in inventory, job templates,
 workflow variables, or surveys. It is a generated global `set_stats` artifact.
@@ -72,10 +83,12 @@ child template. Use the same inventory and project revision for both nodes.
 2. Run each native async template. Verify demo2 times out and demo3 exits 7, the
    job is Failed, and only demo1 reaches the continuation message. In the
    separate polling example, all hosts first reach `BEFORE COLLECTION`.
-3. Launch `demo_collect_async_fail_host`. Verify all three outcomes and useful
+3. Launch `demo_workflow_async_fail_host`. Verify all three outcomes and useful
    diagnostics. Only demo1 reaches `ROLE continued`; demo2 and demo3 have native
-   failures; the job is Failed.
-4. Launch the **complete workflow**. Verify the collection job is Successful.
+   failures; the job and workflow are Failed. Verify that the Success-linked
+   `demo_verify_async_survivors` node does not launch a job.
+4. Launch `demo_workflow_async_collect_and_exclude`. Verify the collection job
+   is Successful.
    Its artifact contains `__async_timeouts_failed_hosts: [demo2, demo3]`, with
    order irrelevant. The unsuccessful hosts have `rescued=1`, `failed=0`, and
    `ignored=0`; only demo1 reaches the continuation message.
@@ -181,7 +194,27 @@ changes have passed CLI checks; AAP has not yet been revalidated.
 
 The role example now also shows the launch directly and leaves job caches to EE
 teardown. Its role handles diagnostics and the selected policy within `rescue`,
-without a separate failure flag. These changes have not yet been revalidated in AAP.
+without a separate failure flag. Workflow-level validation of the simplified role
+is recorded below.
+
+### Fail-host workflow comparison
+
+On October 29, 2026, workflow template **27**, `demo_workflow_async_fail_host`,
+was copied from template **15**. Its start node uses job template **12** instead
+of **13**; its verification node still uses template **14** with a Success link.
+The original workflow was left unchanged.
+
+Workflow job **65** and its role job **66** both finished Failed as intended at
+revision `b5d1e5d87b0a5fedbb6598f29d05bb4c1dd294f7`. Only demo1 reached
+`ROLE continued`; demo2 and demo3 each had one rescued failure and one unhandled
+failure. The verification node had no job and was marked not to run.
+
+For comparison, the existing collection workflow job **62** at the same revision
+was inspected: jobs **63/64** succeeded, demo2/demo3 were exported and inherited,
+and downstream verification ran only on demo1. That workflow was not relaunched.
+See the [sanitized comparison evidence](workflow-comparison-validation.json).
+These observations validate the role's two workflow outcomes, rather than a
+full repeat of the earlier AAP acceptance matrix.
 
 ## Troubleshooting and cleanup
 
@@ -202,7 +235,7 @@ without a separate failure flag. These changes have not yet been revalidated in 
 - **Polling exhausted:** the operation can still be running. Inspect the async
   result in the same execution context before attempting cache cleanup.
 
-Remove the workflow, six templates, and dedicated inventory/source after use.
+Remove both workflows, six job templates, and dedicated inventory/source after use.
 Remove the standalone HTTP service with `oc delete -k demos/async-timeouts/service`.
 Retain shared projects and EEs. See the [demo cleanup notes](../README.md#cleanup-and-limitations)
 for interruption behavior and temporary resources.
