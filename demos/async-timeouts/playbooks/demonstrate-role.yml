@@ -16,7 +16,6 @@
         per_host: false
         aggregate: false
       run_once: true
-      when: not ansible_check_mode
 
     - name: Launch the delayed operation
       ansible.builtin.command:
@@ -35,7 +34,6 @@
       poll: 0
       register: __async_timeouts_launch
       changed_when: false
-      when: not ansible_check_mode
 
     - name: Show that execution continues before the operation finishes
       ansible.builtin.debug:
@@ -50,7 +48,6 @@
         async_result_failure_policy: "{{ async_timeouts_failure_policy }}"
         async_result_retries: "{{ async_timeouts_poll_retries }}"
         async_result_delay: "{{ async_timeouts_poll_interval }}"
-      when: not ansible_check_mode
 
     - name: Continue on hosts whose operation succeeded
       ansible.builtin.debug:
