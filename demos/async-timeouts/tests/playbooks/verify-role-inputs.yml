@@ -10,15 +10,12 @@
         per_host: false
         aggregate: false
       run_once: true
-      when: not ansible_check_mode
 
     - name: Invoke the role with verification inputs
       ansible.builtin.include_role:
         name: async_result
-      when: not ansible_check_mode
 
     - name: Report successful standalone collection
       ansible.builtin.debug:
         msg: "STANDALONE continued on {{ inventory_hostname }}"
         verbosity: 0
-      when: not ansible_check_mode

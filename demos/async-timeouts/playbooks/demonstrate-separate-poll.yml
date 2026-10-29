@@ -20,7 +20,6 @@
       poll: 0
       register: __async_timeouts_launch
       changed_when: false
-      when: not ansible_check_mode
 
     - name: Show that execution continues before the operation finishes
       ansible.builtin.debug:
@@ -35,7 +34,6 @@
       retries: "{{ async_timeouts_poll_retries }}"
       delay: "{{ async_timeouts_poll_interval }}"
       changed_when: false
-      when: not ansible_check_mode
 
     - name: Show that only successful hosts continue after collection
       ansible.builtin.debug:

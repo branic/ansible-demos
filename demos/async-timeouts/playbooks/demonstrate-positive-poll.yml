@@ -19,10 +19,8 @@
       async: "{{ async_timeouts_execution_timeout }}"
       poll: "{{ async_timeouts_poll_interval }}"
       changed_when: false
-      when: not ansible_check_mode
 
     - name: Show that the launching task completed before continuing
       ansible.builtin.debug:
         msg: "POSITIVE POLL continued on {{ inventory_hostname }}"
         verbosity: 0
-      when: not ansible_check_mode

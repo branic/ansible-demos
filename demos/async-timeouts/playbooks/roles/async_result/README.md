@@ -76,8 +76,7 @@ cleanup cancels an operation. Never remove an active job's cache to cancel it.
 
 ## Limitations
 
-The caller must guard async launches and role invocation in check mode. Run
-`demonstrate-role.yml` in normal mode; it does not provide those guards.
+The role requires a launched async job. Run the async examples in normal mode.
 
 Only one job per host per invocation is supported. The caller handles failed
 launches before invoking the role. Unreachable hosts and invalid task definitions

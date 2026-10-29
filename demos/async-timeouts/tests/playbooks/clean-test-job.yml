@@ -7,14 +7,10 @@
       ansible.builtin.stat:
         path: "{{ async_timeouts_cleanup_job.results_file }}"
       register: __async_timeouts_cache
-      when:
-        - not ansible_check_mode
-        - async_timeouts_cleanup_job.results_file is defined
+      when: async_timeouts_cleanup_job.results_file is defined
 
     - name: Clean job | Finish collecting before removing the cache
-      when:
-        - not ansible_check_mode
-        - (__async_timeouts_cache.stat | default({})).exists | default(false)
+      when: (__async_timeouts_cache.stat | default({})).exists | default(false)
       block:
         - name: Clean job | Wait for the wrapper to finish
           ansible.builtin.async_status:

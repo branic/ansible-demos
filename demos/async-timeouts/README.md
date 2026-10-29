@@ -131,7 +131,7 @@ python3 demos/async-timeouts/tests/verify_cli.py
 
 ## Cleanup and limitations
 
-Run `demonstrate-role.yml` in normal mode; it does not support check mode.
+Run the async examples in normal mode; they do not support check mode.
 
 Async job caches are discarded when an ephemeral EE is removed. For CLI runs,
 wait for the job to finish, then remove retained caches with

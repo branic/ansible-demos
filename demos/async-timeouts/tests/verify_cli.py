@@ -452,7 +452,7 @@ def check_uri_example(base: Path) -> None:
 
 
 def check_static_and_check_mode(base: Path, uri_only: bool = False) -> None:
-    """Check selected entrypoints and prove check mode does not launch operations."""
+    """Syntax-check entrypoints and check dry runs for non-async examples."""
     if uri_only:
         playbooks = [DEMO / "playbooks" / "demonstrate-uri-timeout.yml"]
     else:
@@ -479,6 +479,8 @@ def check_static_and_check_mode(base: Path, uri_only: bool = False) -> None:
         require(
             result.returncode == 0, f"Syntax check failed: {relative}\n{result.stderr}"
         )
+        if playbook.name not in {"demonstrate-uri-timeout.yml", "verify-survivors.yml"}:
+            continue
         job = run_job(
             base,
             f"check-mode-{index}",
