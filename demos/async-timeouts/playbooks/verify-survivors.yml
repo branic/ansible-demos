@@ -4,9 +4,9 @@
   gather_facts: false
   tasks:
     - name: Exclude hosts recorded by the upstream job
-      ansible.builtin.meta: end_host
       when: >-
         inventory_hostname in (__async_timeouts_failed_hosts | default([]))
+      ansible.builtin.meta: end_host
 
     - name: Check connectivity on surviving hosts
       ansible.builtin.ping:

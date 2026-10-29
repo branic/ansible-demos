@@ -4,10 +4,10 @@
   gather_facts: false
   tasks:
     - name: Clean job | Check whether this job still has a cache
+      when: async_timeouts_cleanup_job.results_file is defined
       ansible.builtin.stat:
         path: "{{ async_timeouts_cleanup_job.results_file }}"
       register: __async_timeouts_cache
-      when: async_timeouts_cleanup_job.results_file is defined
 
     - name: Clean job | Finish collecting before removing the cache
       when: (__async_timeouts_cache.stat | default({})).exists | default(false)

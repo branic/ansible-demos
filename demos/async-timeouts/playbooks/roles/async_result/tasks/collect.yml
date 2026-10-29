@@ -28,21 +28,21 @@
         verbosity: 0
 
     - name: Collect | Explain an unfinished job
+      when: __async_result_result is not finished
       ansible.builtin.debug:
         msg: >-
           Status polling ended before the operation finished. Removing its cache
           does not cancel it.
         verbosity: 0
-      when: __async_result_result is not finished
 
     - name: Collect | Fail only the affected host
+      when: async_result_failure_policy == 'fail_host'
       ansible.builtin.fail:
         msg: >-
           Async operation unsuccessful on {{ inventory_hostname }}:
           {{ __async_result_result.msg | default('No terminal result collected') }};
           rc={{ __async_result_result.rc | default('unavailable') }};
           stderr={{ __async_result_result.stderr | default('') }}
-      when: async_result_failure_policy == 'fail_host'
 
     - name: Collect | Record the unsuccessful host for downstream exclusion
       ansible.builtin.set_stats:
@@ -60,7 +60,7 @@
       changed_when: true
 
 - name: Collect | End this host after recording it
-  ansible.builtin.meta: end_host
   when:
     - async_result_failure_policy == 'collect_and_exclude'
     - __async_result_result is failed
+  ansible.builtin.meta: end_host
