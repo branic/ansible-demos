@@ -19,23 +19,20 @@ The username is not marked secret in the custom type and should print visibly;
 the password is marked secret and AAP can mask it as `********`. This demonstrates
 both field settings while validating that the playbook received nonempty strings.
 
-## Execution mode and validation status
+## Execution mode and requirements
 
-**AAP demo, pending Azure and controller lab validation.** Local checks validate
-the playbook using synthetic inputs; they do not test the external lookup or
-prove AAP credential injection. CLI execution is not an alternative to the AAP
-credential integration demonstrated here.
+**Execution mode: AAP.** The CLI commands below check the playbook with synthetic
+inputs. Use AAP to demonstrate the external credential integration.
 
-| Component | Requirement / tested version |
+| Component | Requirement |
 | --- | --- |
-| AAP | Target 2.6; controller execution pending |
-| Azure | Public cloud subscription and Microsoft Entra tenant; provisioning pending |
-| Azure CLI | Current CLI with `az keyvault` and `az ad sp`; lab version pending |
-| ansible-core | Local playbook verification: 2.20.7 |
-| ansible-lint | 26.6.0, production profile (core 2.21.2) |
-| Collections | ansible.builtin only; no additional collections |
-| Target | localhost inside the job EE; no managed machines |
-| Execution environment | AAP-compatible Python 3 / ansible-core EE; image digest pending |
+| AAP | 2.6 |
+| Azure | Public cloud subscription and Microsoft Entra tenant |
+| Azure CLI | CLI with `az keyvault` and `az ad sp` |
+| ansible-core | 2.16+ for CLI checks and the job EE |
+| Collections | **None** |
+| Target | `localhost` |
+| Execution environment | AAP-compatible EE with ansible-core 2.16+ |
 
 Prerequisites include an AAP administrator able to manage credential types and
 credentials, Azure provisioning/app registration/role assignment permissions,
@@ -95,7 +92,6 @@ For integration verification, run the AAP template with no manually supplied
 values. Expect a **Successful** job and the confirmation message. The final
 debug task should show the username, while AAP may mask the password. The
 lookup tests and a new job after rotation verify the external credential path.
-Record the Azure CLI, AAP, and EE versions after completing those lab checks.
 
 ## Cleanup
 

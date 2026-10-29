@@ -1,6 +1,6 @@
 # Configure Azure Key Vault credentials in AAP
 
-Target: AAP 2.6. Azure and controller execution are pending lab validation.
+Use AAP 2.6 or later.
 Complete [Azure setup](../azure-setup.md) first. These steps create AAP objects
 manually; the configuration YAML files are UI snippets, not playbooks.
 
@@ -67,10 +67,9 @@ target field to the source credential and its own lookup metadata.
 1. Create or reuse an SCM project for this repository and demo branch, then sync.
 2. Create **Azure Key Vault demo** inventory. Add a **Sourced from a Project**
    inventory source using `demos/azure-key-vault/inventory/demo.yml` and sync it.
-3. Select an AAP-compatible EE containing Python 3 and ansible-core. No Azure
+3. Select an AAP-compatible EE containing ansible-core 2.16+. No Azure
    collections, Azure CLI, or Azure SDK need to be added to the job's EE: the
    controller's credential plugin retrieves the values before the playbook runs.
-   Record the EE tag/digest after lab verification.
 4. Create the job template below. Give the launching user permission to execute
    the template and use the required credentials, project, inventory, and EE.
 
